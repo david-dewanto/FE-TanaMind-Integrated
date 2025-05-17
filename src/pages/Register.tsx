@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../components/Logo';
-import { ErrorMessage, LoadingSpinner } from '../components/common';
+import { ErrorMessage, LoadingSpinner, ButtonSpinner } from '../components/common';
 
 const Register: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -225,10 +225,7 @@ const Register: React.FC = () => {
                 className="w-full bg-[#0B9444] hover:bg-[#056526] text-white font-medium py-2 rounded-md flex items-center justify-center transition-colors"
               >
                 {isLoading ? (
-                  <>
-                    <LoadingSpinner size="small" className="mr-2" />
-                    Creating Account...
-                  </>
+                  <ButtonSpinner text="Creating Account..." />
                 ) : (
                   'Create Account'
                 )}

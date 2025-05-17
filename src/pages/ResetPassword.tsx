@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Loader2, Lock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Lock, ArrowLeft, CheckCircle } from 'lucide-react';
 import { auth } from '../api';
+import { ButtonSpinner } from '../components/common';
 import Logo from '../components/Logo';
 
 const ResetPassword: React.FC = () => {
@@ -178,10 +179,7 @@ const ResetPassword: React.FC = () => {
               className="w-full bg-[#0B9444] hover:bg-[#056526] text-white font-medium py-2 rounded-md flex items-center justify-center transition-colors"
             >
               {isLoading ? (
-                <>
-                  <Loader2 size={18} className="mr-2 animate-spin" />
-                  Updating Password...
-                </>
+                <ButtonSpinner text="Updating Password..." />
               ) : (
                 'Reset Password'
               )}

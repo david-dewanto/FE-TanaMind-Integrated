@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LogIn, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../components/Logo';
-import { ErrorMessage, LoadingSpinner } from '../components/common';
+import { ErrorMessage, LoadingSpinner, ButtonSpinner } from '../components/common';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -131,10 +131,7 @@ const Login: React.FC = () => {
             className="w-full bg-[#0B9444] hover:bg-[#056526] text-white font-medium py-2 rounded-md flex items-center justify-center transition-colors"
           >
             {isLoading ? (
-              <>
-                <LoadingSpinner size="small" className="mr-2" />
-                Signing in...
-              </>
+              <ButtonSpinner text="Signing in..." />
             ) : (
               <>
                 <LogIn size={18} className="mr-2" />

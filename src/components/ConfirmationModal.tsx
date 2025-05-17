@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
+import { ButtonSpinner } from './common';
 
 interface ConfirmationModalProps {
   title: string;
@@ -64,8 +65,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 : 'bg-[#0B9444] hover:bg-[#056526]'
             }`}
           >
-            {isLoading && <Loader2 size={16} className="mr-2 animate-spin" />}
-            {confirmLabel}
+            {isLoading ? (
+              <ButtonSpinner text="Processing..." />
+            ) : (
+              confirmLabel
+            )}
           </button>
         </div>
       </div>
