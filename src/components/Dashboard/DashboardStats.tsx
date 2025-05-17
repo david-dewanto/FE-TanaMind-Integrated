@@ -1,6 +1,6 @@
 import React from 'react';
 import { DashboardStats as DashboardStatsType } from '../../types';
-import { Plane as Plant, Droplets, AlertCircle, CheckCircle } from 'lucide-react';
+import { Flower, Droplets, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface DashboardStatsProps {
   stats: DashboardStatsType;
@@ -11,7 +11,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
     { 
       title: 'Total Plants', 
       value: stats.totalPlants, 
-      icon: <Plant size={20} className="text-[#0B9444]" />,
+      icon: <Flower size={20} className="text-[#0B9444]" />,
       bgColor: 'bg-[#DFF3E2]',
       textColor: 'text-[#056526]',
     },

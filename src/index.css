@@ -1,3 +1,103 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Article content styling */
+.prose p {
+  margin-top: 1.5em !important;
+  margin-bottom: 1.5em !important;
+  line-height: 1.8 !important;
+}
+
+.prose h2 {
+  margin-top: 2em !important;
+  margin-bottom: 1em !important;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.prose h3 {
+  margin-top: 1.75em !important;
+  margin-bottom: 0.75em !important;
+}
+
+.prose ul, .prose ol {
+  margin-top: 1.5em !important;
+  margin-bottom: 1.5em !important;
+  padding-left: 2em !important;
+  list-style-position: outside !important;
+}
+
+.prose li {
+  margin-top: 0.7em !important;
+  margin-bottom: 0.7em !important;
+  padding-left: 0.5em !important;
+  position: relative !important;
+  display: block !important;
+}
+
+.prose ul > li::before {
+  background-color: #0B9444 !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  margin-top: 0.7em !important;
+}
+
+/* Add a bit more visual distinction for nested lists */
+.prose ul ul > li::before {
+  background-color: #39B54A !important;
+  width: 5px !important;
+  height: 5px !important;
+}
+
+/* Style for numbered lists */
+.prose ol {
+  list-style-type: decimal !important;
+  padding-left: 1.8em !important;
+}
+
+.prose ol > li {
+  padding-left: 0.5em !important;
+  margin-bottom: 1em !important;
+}
+
+.prose ol > li::before {
+  color: #0B9444 !important;
+  font-weight: 600 !important;
+}
+
+/* Force stronger list styling */
+ul li {
+  list-style-type: disc !important;
+}
+
+ol li {
+  list-style-type: decimal !important;
+}
+
+.prose ul ul, .prose ol ol, .prose ul ol, .prose ol ul {
+  margin-top: 0.75em !important;
+  margin-bottom: 0.75em !important;
+}
+
+.prose hr {
+  margin-top: 2em !important;
+  margin-bottom: 2em !important;
+  border-color: #e5e7eb !important;
+}
+
+.prose blockquote {
+  font-style: italic;
+  color: #4b5563;
+  border-left-color: #0B9444 !important;
+  border-left-width: 4px !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 1.5em !important;
+  padding-left: 1.5em !important;
+}
+
+/* Add spacing between sibling paragraphs */
+.prose p + p {
+  margin-top: 1.75em !important;
+}

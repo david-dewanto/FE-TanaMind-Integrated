@@ -61,9 +61,9 @@ const Articles: React.FC = () => {
               </div>
             </div>
             <div className="p-5">
-              <ul className="space-y-4">
+              <div className="space-y-4">
                 {articlesByCategory[category.id]?.map((article) => (
-                  <li key={article.id} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                  <div key={article.id} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
                     <Link 
                       to={`/articles/${article.slug}`}
                       className="block hover:bg-gray-50 rounded-lg p-2 -ml-2 transition-colors"
@@ -78,9 +78,9 @@ const Articles: React.FC = () => {
                         <span>{article.readTimeMinutes} min read</span>
                       </div>
                     </Link>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           </div>
         ))}

@@ -8,9 +8,79 @@ import { marked } from 'marked';
  * Advanced content processor for optimal article display
  * Ensures professionally formatted content with proper spacing,
  * list formatting, and typographic improvements
+ * 
+ * The function performs the following improvements:
+ * 1. Normalizes line breaks for consistent rendering
+ * 2. Ensures proper spacing between paragraphs
+ * 3. Detects and formats implicit lists
+ * 4. Corrects spacing around headings
+ * 5. Improves formatting of numbered and bulleted lists
  */
 function processContent(content: string): string {
   if (!content) return '';
+  
+  // Special case pre-processing for specific articles with known formatting issues
+  
+  // Find and format nutrient sections in the plant nutrition article
+  if (content.includes('### Secondary Macronutrients') || content.includes('## The Essential Nutrients')) {
+    // Add markdown-style bullets to each nutrient property description
+    
+    // For Calcium (Ca)
+    content = content.replace(
+      /\*\*Calcium \(Ca\)\*\*\n(Essential for cell wall strength)\n\n(Helps plants absorb other nutrients)\n\n(Deficiency appears in new growth as distorted leaves)/g,
+      '**Calcium (Ca)**\n* $1\n* $2\n* $3'
+    );
+    
+    // For Magnesium (Mg)
+    content = content.replace(
+      /\*\*Magnesium \(Mg\)\*\*\n(Central atom in chlorophyll molecules)\n\n(Essential for photosynthesis)\n\n(Deficiency shows as interveinal yellowing \(yellow leaves with green veins\))/g,
+      '**Magnesium (Mg)**\n* $1\n* $2\n* $3'
+    );
+    
+    // For Sulfur (S)
+    content = content.replace(
+      /\*\*Sulfur \(S\)\*\*\n(Component of amino acids and proteins)\n\n(Contributes to chlorophyll production)\n\n(Deficiency appears as light green younger leaves)/g,
+      '**Sulfur (S)**\n* $1\n* $2\n* $3'
+    );
+    
+    // For Nitrogen (N)
+    content = content.replace(
+      /\*\*Nitrogen \(N\)\*\*\n(Promotes leafy, vegetative growth)\n\n(Key component of chlorophyll and amino acids)\n\n(Deficiency shows as yellowing of older leaves)\n\n(Excess causes leggy growth with weak stems)/g,
+      '**Nitrogen (N)**\n* $1\n* $2\n* $3\n* $4'
+    );
+    
+    // For Phosphorus (P)
+    content = content.replace(
+      /\*\*Phosphorus \(P\)\*\*\n(Essential for root development and flowering)\n\n(Important for energy transfer within the plant)\n\n(Deficiency shows as purple tinges on leaves and poor flowering)\n\n(Supports seed and fruit production)/g,
+      '**Phosphorus (P)**\n* $1\n* $2\n* $3\n* $4'
+    );
+    
+    // For Potassium (K)
+    content = content.replace(
+      /\*\*Potassium \(K\)\*\*\n(Regulates water uptake and transpiration)\n\n(Strengthens cell walls and improves disease resistance)\n\n(Enhances flower and fruit quality)\n\n(Deficiency appears as scorched leaf margins and weak stems)/g,
+      '**Potassium (K)**\n* $1\n* $2\n* $3\n* $4'
+    );
+  }
+  
+  // Find and properly format "Types of Fertilizers" sections in plant articles
+  if (content.includes('### Types of Fertilizers') || content.includes('## Types of Fertilizers')) {
+    content = content.replace(
+      /\*\*(Organic|Synthetic|Chemical|Slow-Release|Liquid) Fertilizers\*\*\n([^*\n]+)/g,
+      '- **$1 Fertilizers** - $2'
+    );
+  }
+  
+  // Format "Signs of X" sections that are common in plant articles
+  content = content.replace(
+    /###\s+Signs\s+of\s+([A-Za-z\s]+)\n\n([^\n-][^\n]+)\n([^\n-][^\n]+)\n([^\n-][^\n]+)/g,
+    '### Signs of $1\n\n- $2\n- $3\n- $4'
+  );
+  
+  // Format "Care tips" sections to have proper bullet points
+  content = content.replace(
+    /\*\*Care tips:\*\*\n\n([^\n-][^\n]+)\n([^\n-][^\n]+)\n([^\n-][^\n]+)\n([^\n-][^\n]+)/g,
+    '**Care tips:**\n\n- $1\n- $2\n- $3\n- $4'
+  );
   
   // Normalize line breaks and clean up excessive spacing
   let processed = content
@@ -36,7 +106,7 @@ function processContent(content: string): string {
   
   // 1. Detect and fix bullet list patterns
   
-  // Handle sequential capitalized sentences after a colon as list items
+  // Advanced bullet point detection for short, capitalized sentence sequences
   processed = processed.replace(
     /([.:])\s*\n\s*\n([A-Z][^#\n.]+[.!?])\s*\n\s*([A-Z][^#\n.]+[.!?])/g,
     (match, endChar, line1, line2) => {
@@ -46,10 +116,47 @@ function processContent(content: string): string {
     }
   );
   
-  // 2. Lines after list indicator phrases
+  // Detect common bullet point patterns that aren't properly formatted
+  processed = processed.replace(
+    /\n([•\-–—*]|\\+|\>\s*|\\s{2,})\s*([A-Z][^\n]+)/g,
+    '\n- $2'
+  );
+  
+  // Convert any lines starting with a dash but missing proper spacing
+  processed = processed.replace(
+    /\n-([^\s])/g,
+    '\n- $1'
+  );
+  
+  // Convert short, sequential items starting with capitals (especially after a heading)
+  processed = processed.replace(
+    /\n(#+[^\n]+)\n\n([A-Z][^#\n.]+[.!?])\n([A-Z][^#\n.]+[.!?])\n(?![A-Z])/g,
+    (match, heading, line1, line2) => {
+      // Only convert if they look like list items (reasonably short)
+      if (line1.length < 100 && line2.length < 100) {
+        return `\n${heading}\n\n- ${line1}\n- ${line2}\n\n`;
+      }
+      return match;
+    }
+  );
+  
+  // Convert sequences of similar short phrases that look like they should be bullet points
+  processed = processed.replace(
+    /\n([A-Z][^.\n]{3,40}[.:])\n([A-Z][^.\n]{3,40}[.:])\n([A-Z][^.\n]{3,40}[.:])/g,
+    '\n- $1\n- $2\n- $3'
+  );
+  
+  // Ensure all bullet points use consistent format with proper spacing
+  processed = processed.replace(/\n[-*+•](?!\s)/g, '\n- ');
+  
+  // 2. Lines after list indicator phrases - expanded to catch more list patterns
   const listIndicators = [
     'include', 'such as', 'examples', 'following', 'signs', 'symptoms',
-    'benefits', 'advantages', 'features', 'reasons', 'steps', 'tips', 'ways'
+    'benefits', 'advantages', 'features', 'reasons', 'steps', 'tips', 'ways',
+    'factors', 'techniques', 'methods', 'strategies', 'options', 'varieties',
+    'types', 'categories', 'solutions', 'problems', 'issues', 'causes',
+    'effects', 'aspects', 'characteristics', 'considerations', 'requirements',
+    'elements', 'components', 'principles', 'phases', 'stages', 'patterns'
   ];
   
   // Build a regex pattern from the list indicators
@@ -61,6 +168,36 @@ function processContent(content: string): string {
   processed = processed.replace(
     indicatorPattern,
     (match, prefix, firstItem) => `${prefix}:\n\n- ${firstItem.trim()}`
+  );
+  
+  // Special case: Handle specific patterns for care tips sections
+  processed = processed.replace(
+    /\n\*\*(?:Care tips|Tips|Care instructions|Instructions|Requirements):\*\*\s*\n\s*\n([A-Z][^\n]+)\n\s*\n([A-Z][^\n]+)/g,
+    '\n**$1:**\n\n- $2\n- $3'
+  );
+  
+  // Handle all sections with "Signs" in the title
+  processed = processed.replace(
+    /\n### Signs of ([A-Za-z\s]+)\n\n([A-Z][^\n-]+)\n([A-Z][^\n-]+)/g,
+    '\n### Signs of $1\n\n- $2\n- $3'
+  );
+  
+  // Extra handling for "Signs include:" section that's common in plant articles
+  processed = processed.replace(
+    /\n([A-Za-z\s]+)\s+include:\s*\n\s*\n([A-Z][^\n]+)\n([A-Z][^\n]+)/g,
+    '\n$1 include:\n\n- $2\n- $3'
+  );
+  
+  // Special case for lines after "include:" with paragraphs containing short sentences
+  processed = processed.replace(
+    /include:\n\n([A-Z][^\n.]+\.[^\n.]+\.[^\n.]+\.)\n\n([A-Z][^\n.]+\.[^\n.]+\.)/g, 
+    'include:\n\n- $1\n- $2'
+  );
+  
+  // Format content after colons (likely lists)
+  processed = processed.replace(
+    /([Tt]ips|[Ss]igns|[Ss]ymptoms|[Pp]roperties|[Ss]olutions|[Mm]ethods|[Oo]ptions|[Ss]teps|[Bb]enefits|[Aa]dvantages):\n\n([A-Z][^\n-]+\.)\n([A-Z][^\n-]+\.)\n([A-Z][^\n-]+\.)/g,
+    '$1:\n\n- $2\n- $3\n- $4'
   );
   
   // 3. Enhanced list detection for sequential short paragraphs
@@ -133,23 +270,75 @@ function processContent(content: string): string {
     .replace(/\n\n\n+(- |\* |\d+\. )/g, '\n\n$1')
     .replace(/\n(- |\* |\d+\. )([^\n]+)\n(?!\n|- |\* |\d+\. )/g, '\n$1$2\n\n');
     
-  // Fix numbered list formatting
+  // Enhanced numbered list detection and formatting
   processed = processed
+    // Ensure proper spacing for numbered list items
     .replace(/\n(\d+)\.([^\s])/g, '\n$1. $2')
-    .replace(/\n(\d+\.) ([^\n]+)\n(?!\n|\d+\. )/g, '\n$1 $2\n\n');
+    .replace(/\n(\d+\.) ([^\n]+)\n(?!\n|\d+\. )/g, '\n$1 $2\n\n')
+    
+    // Convert implicit numbered lists: lines starting with numbers
+    .replace(/\n(\d+)[\.:\)][\s]+([^\n]+)(?:\n(?!\n|\d+[\.:\)]))/g, '\n$1. $2\n')
+    
+    // Find sequences that look like they should be numbered lists
+    .replace(/\n([A-Z][^:\n]*?)\s+(\d+)[\.:\)]\s+([^\n]+)(?:\n(?![A-Z]|\d+[\.:\)]))/g, (match, prefix, num, content) => {
+      // If this looks like the start of a numbered list, add proper markdown
+      return `\n${prefix}\n\n${num}. ${content}\n\n`;
+    })
+    
+    // Detect sequential steps or numbered points even if not in list format
+    .replace(/\n(Step|Point|Phase|Stage|Part)(\s+)(\d+)[\s:]+([^\n]+)/gi, '\n$1$2$3: $4\n')
+    
+    // Convert sequences of Step X: text into proper markdown numbered lists
+    .replace(/\n(?:Step|Point|Phase|Stage|Part)(?:\s+)(?:\d+):\s+([^\n]+)(?:\n(?:Step|Point|Phase|Stage|Part)(?:\s+)(?:\d+))/gi, 
+      '\n1. $1\n')
+    .replace(/\n(?:Step|Point|Phase|Stage|Part)(?:\s+)(?:\d+):\s+([^\n]+)/gi, 
+      '\n1. $1\n')
+      
+    // Ensure all numbered list sequences have consistent format (e.g., "1.", "2.", instead of "1)", "2)")
+    .replace(/\n(\d+)[:\)](\s+)([^\n]+)/g, '\n$1.$2$3')
+    
+    // Convert short numbered sequences that look like lists but don't have proper list formatting
+    .replace(/\n(\d+)\.\s+([A-Z][^\n.]+\.)\n(\d+)\.\s+([A-Z][^\n.]+\.)/g, '\n1. $2\n2. $4')
+    
+    // Fix consecutive numbered points to have proper list format
+    .replace(/\n(\d+)\.\s+([^\n]+)\n(?!\n)(\d+)\.\s+([^\n]+)/g, '\n$1. $2\n$3. $4\n');
   
-  // Ensure consistent paragraph spacing
+  // Enhanced paragraph spacing & formatting - optimized for article readability
   processed = processed
     // First, normalize all paragraph breaks to double line breaks
     .replace(/\n\n\n+/g, '\n\n')
-    // Ensure single line breaks within paragraphs don't create new paragraphs
+    
+    // Make sure paragraphs are properly separated - this is critical for markdown parsing
     .replace(/([^\n])\n(?!\n|#+\s|\d+\. |- |\* )/g, '$1\n\n')
-    // Make sure there's proper spacing between headers and paragraphs
+    
+    // Ensure headers have proper spacing before and after
     .replace(/(#+\s+[^\n]+)\n(?!\n)/g, '$1\n\n')
+    .replace(/([^\n])\n(#+\s+)/g, '$1\n\n$2')
+    
+    // Convert lines after colons to lists when appropriate 
+    .replace(/:\s*\n\n([A-Z][^.\n]{5,50}\.)\n([A-Z][^.\n]{5,50}\.)/g, ':\n\n- $1\n- $2')
+    
     // Ensure proper paragraph breaks after lists
     .replace(/(\n- [^\n]+)(?:\n(?![\n-]))/g, '$1\n\n')
-    // Make sure list items have proper spacing
-    .replace(/\n(- [^\n]+)\n(- )/g, '\n$1\n\n$2');
+    
+    // Make sure list items have proper spacing between them
+    .replace(/\n(- [^\n]+)\n(- )/g, '\n$1\n$2')
+    
+    // Add space between numbered list items too
+    .replace(/\n(\d+\. [^\n]+)\n(\d+\. )/g, '\n$1\n$2')
+    
+    // Ensure proper spacing between list items and following paragraphs
+    .replace(/(\n- [^\n]+)\n(?!\n|- |\d+\. |#+\s)/g, '$1\n\n')
+    .replace(/(\n\d+\. [^\n]+)\n(?!\n|\d+\. |- |#+\s)/g, '$1\n\n')
+    
+    // Double check to make sure all paragraphs have proper spacing
+    .replace(/(\n\n[^-\n#\d][^\n]+)\n(?!\n)/g, '$1\n\n')
+    
+    // Ensure all paragraph blocks end with double newlines
+    .replace(/([^\n]+)$/g, '$1\n\n')
+    
+    // Final cleanup for nested lists
+    .replace(/\n(- [^\n]+)\n {2,4}(- )/g, '\n$1\n  $2');
   
   return processed;
 }
@@ -212,21 +401,13 @@ const ArticleDetail: React.FC = () => {
               <div className="h-2 bg-gradient-to-r from-[#0B9444] to-[#39B54A]"></div>
               
               <div className="p-6 md:p-10">
-                {/* Article metadata and sharing */}
+                {/* Article metadata */}
                 <div className="flex justify-between items-center mb-8">
                   <div className="flex items-center space-x-2">
                     <span className="inline-flex items-center px-3 py-1 bg-[#DFF3E2] text-[#0B9444] rounded-full text-sm">
                       <Clock size={14} className="mr-1" />
                       {article.readTimeMinutes} min read
                     </span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Share article">
-                      <Share2 size={18} className="text-gray-500" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Save article">
-                      <Bookmark size={18} className="text-gray-500" />
-                    </button>
                   </div>
                 </div>
                 
@@ -273,28 +454,300 @@ const ArticleDetail: React.FC = () => {
                 )}
                 
                 {/* Article content with professional typography */}
-                <div 
-                  className="prose prose-lg max-w-none prose-headings:text-[#056526] prose-headings:font-bold prose-h1:text-3xl prose-h1:mb-8 prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6 prose-h3:text-xl prose-h3:mt-10 prose-h3:mb-4 prose-a:text-[#0B9444] prose-a:font-medium prose-a:no-underline prose-a:border-b prose-a:border-[#0B9444] hover:prose-a:text-[#056526] prose-strong:text-gray-800 prose-p:text-base prose-p:my-8 prose-p:leading-relaxed prose-p:text-gray-700 prose-ul:list-disc prose-ul:pl-6 prose-ul:my-8 prose-ol:list-decimal prose-ol:pl-6 prose-ol:my-8 prose-blockquote:border-l-4 prose-blockquote:border-l-[#0B9444] prose-blockquote:bg-gray-50 prose-blockquote:py-2 prose-blockquote:pl-4 prose-blockquote:italic prose-li:mb-4 prose-li:pl-2"
-                  dangerouslySetInnerHTML={{ __html: marked(processContent(article.content), { breaks: true }) }}
-                ></div>
+                <div className="article-content">
+                  <style jsx="true">{`
+                    .article-content ul {
+                      list-style-type: disc !important;
+                      margin: 1.5rem 0;
+                      padding-left: 3rem !important; /* Increased indentation */
+                    }
+                    .article-content ol {
+                      list-style-type: decimal !important;
+                      margin: 1.5rem 0;
+                      padding-left: 3rem !important; /* Increased indentation */
+                    }
+                    .article-content li {
+                      margin: 0.75rem 0;
+                      padding-left: 0.5rem;
+                      color: #374151;
+                      line-height: 1.6;
+                      display: list-item !important;
+                    }
+                    .article-content li::marker {
+                      color: #0B9444;
+                      font-weight: 600;
+                    }
+                    .article-content li:hover {
+                      background-color: #f9fafb;
+                      border-radius: 0.125rem;
+                    }
+                    
+                    /* Nested lists styling */
+                    .article-content li > ul,
+                    .article-content li > ol {
+                      margin: 0.5rem 0 0.5rem 1rem !important;
+                    }
+                    .article-content li > ul {
+                      list-style-type: circle !important;
+                    }
+                    .article-content li > ul > li > ul {
+                      list-style-type: square !important;
+                    }
+                    
+                    /* We need to explicitly style indented lists that don't have proper nesting markup */
+                    .article-content ul li ul {
+                      margin-left: 1.5rem;
+                    }
+                    
+                    /* Force second-level bullets to have proper styling */
+                    .article-content ul li ul li::before {
+                      content: "◦";
+                      color: #0B9444;
+                      font-weight: bold;
+                      display: inline-block;
+                      width: 1em;
+                      margin-left: -1em;
+                    }
+                    
+                    .article-content h1 {
+                      font-size: 1.875rem;
+                      font-weight: 700;
+                      color: #056526;
+                      margin-bottom: 2rem;
+                    }
+                    .article-content h2 {
+                      font-size: 1.5rem;
+                      font-weight: 700;
+                      color: #056526;
+                      margin-top: 3rem;
+                      margin-bottom: 1.5rem;
+                    }
+                    .article-content h3 {
+                      font-size: 1.25rem;
+                      font-weight: 700;
+                      color: #056526;
+                      margin-top: 2.5rem;
+                      margin-bottom: 1rem;
+                    }
+                    .article-content p {
+                      font-size: 1rem;
+                      margin: 2rem 0;
+                      line-height: 1.7;
+                      color: #4b5563;
+                    }
+                    .article-content a {
+                      color: #0B9444;
+                      font-weight: 500;
+                      text-decoration: none;
+                      border-bottom: 1px solid #0B9444;
+                    }
+                    .article-content a:hover {
+                      color: #056526;
+                    }
+                    .article-content strong {
+                      color: #1f2937;
+                      font-weight: 600;
+                    }
+                    .article-content blockquote {
+                      border-left: 4px solid #0B9444;
+                      background-color: #f9fafb;
+                      padding: 0.5rem 0 0.5rem 1rem;
+                      font-style: italic;
+                    }
+                    
+                    /* Direct fixes for specific patterns */
+                    .article-content h3 + ul {
+                      list-style-type: disc !important;
+                      margin-top: 1rem !important;
+                    }
+                    
+                    /* Make sure all list items show their bullets */
+                    .article-content ul li {
+                      display: list-item !important;
+                      list-style: disc outside !important;
+                    }
+                    
+                    .article-content ol li {
+                      display: list-item !important;
+                      list-style: decimal outside !important;
+                    }
+                    
+                    /* Special handling for nutrition article */
+                    .article-content h3 + p > strong {
+                      font-weight: 600;
+                      font-size: 1.1rem;
+                      color: #056526;
+                    }
+                    
+                    /* Override for asterisk bullets to ensure they show properly */
+                    .article-content p {
+                      margin-bottom: 0.5rem;
+                    }
+                    .article-content p:has(+ ul) {
+                      margin-bottom: 0.5rem;
+                    }
+                    /* Make sure * bullets are properly displayed */
+                    .article-content ul {
+                      list-style-type: disc !important;
+                      padding-left: 2rem !important;
+                      margin-top: 0.5rem !important;
+                      margin-bottom: 1.5rem !important;
+                    }
+                    
+                    /* Special styling for nutrient lists */
+                    .article-content .nutrient-title {
+                      font-weight: 600;
+                      color: #056526;
+                      margin-bottom: 0.25rem;
+                      margin-top: 1.5rem;
+                    }
+                    
+                    .article-content .nutrient-list {
+                      padding-left: 3.5rem !important;
+                      margin-top: 0.25rem !important;
+                      margin-bottom: 1.5rem !important;
+                    }
+                    
+                    .article-content .nutrient-list li {
+                      margin-top: 0.5rem;
+                      margin-bottom: 0.5rem;
+                    }
+                    
+                    /* Special styling for care tips lists */
+                    .article-content .care-tips-list {
+                      padding-left: 3.5rem !important;
+                    }
+                    
+                    /* Special styling for fertilizer lists */
+                    .article-content .fertilizer-type {
+                      margin-bottom: 0.25rem;
+                      margin-top: 1.5rem;
+                    }
+                    
+                    .article-content .fertilizer-list {
+                      padding-left: 3.5rem !important;
+                    }
+                  `}</style>
+                  <div 
+                    className="prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ 
+                      __html: article.slug === 'understanding-plant-nutrition' 
+                        ? marked(processContent(article.content), { 
+                            breaks: true,
+                            gfm: true,
+                            pedantic: false,
+                            headerIds: true,
+                            mangle: false
+                          })
+                          // Primary Macronutrients
+                          .replace(
+                            /<p><strong>Nitrogen \(N\)<\/strong><\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p class="nutrient-title"><strong>Nitrogen (N)</strong></p>
+                            <ul class="nutrient-list">
+                              <li>$1</li>
+                              <li>$2</li>
+                              <li>$3</li>
+                              <li>$4</li>
+                            </ul>`
+                          )
+                          .replace(
+                            /<p><strong>Phosphorus \(P\)<\/strong><\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p class="nutrient-title"><strong>Phosphorus (P)</strong></p>
+                            <ul class="nutrient-list">
+                              <li>$1</li>
+                              <li>$2</li>
+                              <li>$3</li>
+                              <li>$4</li>
+                            </ul>`
+                          )
+                          .replace(
+                            /<p><strong>Potassium \(K\)<\/strong><\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p class="nutrient-title"><strong>Potassium (K)</strong></p>
+                            <ul class="nutrient-list">
+                              <li>$1</li>
+                              <li>$2</li>
+                              <li>$3</li>
+                              <li>$4</li>
+                            </ul>`
+                          )
+                          
+                          // Secondary Macronutrients
+                          .replace(
+                            /<p><strong>Calcium \(Ca\)<\/strong><\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p class="nutrient-title"><strong>Calcium (Ca)</strong></p>
+                            <ul class="nutrient-list">
+                              <li>$1</li>
+                              <li>$2</li>
+                              <li>$3</li>
+                            </ul>`
+                          )
+                          .replace(
+                            /<p><strong>Magnesium \(Mg\)<\/strong><\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p class="nutrient-title"><strong>Magnesium (Mg)</strong></p>
+                            <ul class="nutrient-list">
+                              <li>$1</li>
+                              <li>$2</li>
+                              <li>$3</li>
+                            </ul>`
+                          )
+                          .replace(
+                            /<p><strong>Sulfur \(S\)<\/strong><\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p class="nutrient-title"><strong>Sulfur (S)</strong></p>
+                            <ul class="nutrient-list">
+                              <li>$1</li>
+                              <li>$2</li>
+                              <li>$3</li>
+                            </ul>`
+                          )
+                          
+                          // Fix "Types of Fertilizers" sections
+                          .replace(
+                            /<p><strong>(Organic|Synthetic|Chemical|Slow-Release|Liquid) Fertilizers<\/strong><\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p class="fertilizer-type"><strong>$1 Fertilizers</strong></p>
+                            <ul class="fertilizer-list">
+                              <li>$2</li>
+                            </ul>`
+                          )
+                          
+                          // Fix "Care tips" sections
+                          .replace(
+                            /<p><strong>Care tips:<\/strong><\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p><strong>Care tips:</strong></p>
+                            <ul class="care-tips-list">
+                              <li>$1</li>
+                              <li>$2</li>
+                              <li>$3</li>
+                              <li>$4</li>
+                            </ul>`
+                          )
+                        : marked(processContent(article.content), { 
+                            breaks: true,
+                            gfm: true,
+                            pedantic: false,
+                            headerIds: true,
+                            mangle: false
+                          })
+                          // Fix "Care tips" sections in all articles
+                          .replace(
+                            /<p><strong>Care tips:<\/strong><\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>\n<p>([^<]+)<\/p>/g,
+                            `<p><strong>Care tips:</strong></p>
+                            <ul class="care-tips-list">
+                              <li>$1</li>
+                              <li>$2</li>
+                              <li>$3</li>
+                              <li>$4</li>
+                            </ul>`
+                          )
+                    }}
+                  />
+                </div>
                 
-                {/* Article footer with navigation and social sharing */}
-                <div className="mt-12 pt-6 border-t border-gray-200 flex flex-wrap items-center justify-between">
-                  <Link to="/articles" className="inline-flex items-center bg-[#DFF3E2] hover:bg-[#0B9444] text-[#0B9444] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors mb-3 md:mb-0">
+                {/* Article footer with navigation */}
+                <div className="mt-12 pt-6 border-t border-gray-200 flex flex-wrap items-center justify-center">
+                  <Link to="/articles" className="inline-flex items-center bg-[#DFF3E2] hover:bg-[#0B9444] text-[#0B9444] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors">
                     <ArrowLeft size={18} className="mr-2" />
                     Return to Articles
                   </Link>
-                  
-                  <div className="flex space-x-3">
-                    <button className="inline-flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors">
-                      <Share2 size={16} className="mr-2" />
-                      Share
-                    </button>
-                    <button className="inline-flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors">
-                      <Bookmark size={16} className="mr-2" />
-                      Save
-                    </button>
-                  </div>
                 </div>
               </div>
             </article>
