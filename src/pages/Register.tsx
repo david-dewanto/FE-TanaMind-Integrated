@@ -193,6 +193,7 @@ const Register: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className={`pl-10 pr-3 py-2 w-full border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent`}
+                    placeholder="••••••••"
                   />
                 </div>
                 {passwordError && <ErrorMessage message={passwordError} type="error" minimal className="mt-1" />}
@@ -212,6 +213,7 @@ const Register: React.FC = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className={`pl-10 pr-3 py-2 w-full border ${confirmPasswordError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent`}
+                    placeholder="••••••••"
                   />
                 </div>
                 {confirmPasswordError && <ErrorMessage message={confirmPasswordError} type="error" minimal className="mt-1" />}
