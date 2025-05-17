@@ -114,11 +114,13 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onClick, onEdit, onDelete 
             className="w-full h-full object-cover"
           />
         )}
-        <div 
-          className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${getHealthStatusColor()}`}
-        >
-          {plant.iotIntegration.healthStatus.charAt(0).toUpperCase() + plant.iotIntegration.healthStatus.slice(1)}
-        </div>
+        {plant.iotIntegration.healthStatus !== 'excellent' && plant.iotIntegration.healthStatus !== 'good' && (
+          <div 
+            className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${getHealthStatusColor()}`}
+          >
+            {plant.iotIntegration.healthStatus.charAt(0).toUpperCase() + plant.iotIntegration.healthStatus.slice(1)}
+          </div>
+        )}
       </div>
       
       <div className="p-4 cursor-pointer" onClick={onClick}>

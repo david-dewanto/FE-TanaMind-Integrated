@@ -101,9 +101,8 @@ const Register: React.FC = () => {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <div className="flex flex-col items-center justify-center mb-8">
-          <Logo className="h-12 w-auto" />
-          <h1 className="text-[#056526] font-bold text-2xl mt-2">TanaMind</h1>
-          <p className="text-gray-600 mt-1">Create a new account</p>
+          <Logo className="h-12" showText={true} textClassName="text-[#056526] font-bold text-2xl ml-3" linkTo="/" />
+          <p className="text-gray-600 mt-3">Create a new account</p>
         </div>
         
         {error && (

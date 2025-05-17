@@ -288,6 +288,7 @@ const Plants: React.FC = () => {
         <PlantList 
           plants={uiPlants} 
           onPlantClick={handlePlantClick}
+          onEdit={handleEditClick}
           onDelete={handleDeleteClick}
         />
       )}

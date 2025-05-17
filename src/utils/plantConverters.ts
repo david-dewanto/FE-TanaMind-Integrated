@@ -9,7 +9,7 @@ export const apiToUiPlant = (apiPlant: APIPLant): UIPlant => {
   let healthStatus: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
   switch (apiPlant.health_status) {
     case 'Good':
-      healthStatus = 'excellent';
+      healthStatus = 'good';
       break;
     case 'Warning':
       healthStatus = 'fair';

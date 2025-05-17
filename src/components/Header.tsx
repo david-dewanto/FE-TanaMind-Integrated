@@ -63,8 +63,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
             {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="flex items-center">
-            <Logo className="h-8 w-auto" />
-            <h1 className="text-[#056526] font-bold text-xl ml-2">TanaMind</h1>
+            <Logo className="h-10" showText={true} linkTo="/" />
           </div>
         </div>
 

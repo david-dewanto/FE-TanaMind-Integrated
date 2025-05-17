@@ -36,8 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     >
       <div className="h-16 flex items-center justify-center border-b border-gray-200 md:hidden">
         <div className="flex items-center">
-          <Logo className="h-8 w-auto" />
-          <h1 className="text-[#056526] font-bold text-xl ml-2">TanaMind</h1>
+          <Logo className="h-10" showText={true} linkTo="/" />
         </div>
       </div>
 
