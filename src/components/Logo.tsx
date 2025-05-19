@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import logoImage from '../logo.jpg';
+import logoImage from '../logo.png';
 
 interface LogoProps {
   className?: string;

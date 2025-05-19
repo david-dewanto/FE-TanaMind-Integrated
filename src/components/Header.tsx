@@ -63,7 +63,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
             {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="flex items-center">
-            <Logo className="h-10" showText={true} linkTo="/" />
+            <Logo className="h-10" showText={true} linkTo="/landing" />
           </div>
         </div>
 
@@ -92,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
                     Real-time plant notifications will be available in the next update.
                   </p>
                   <Link 
-                    to="/notifications" 
+                    to="/dashboard/notifications" 
                     className="text-sm bg-[#0B9444] text-white px-4 py-2 rounded-lg hover:bg-[#056526] transition-colors inline-block"
                   >
                     Preview Features

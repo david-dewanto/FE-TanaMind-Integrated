@@ -53,7 +53,11 @@ export const apiRequest = async <T>({
 
   // Add auth token if required
   if (requiresAuth) {
-    const token = localStorage.getItem('token');
+    // Check both storage locations for a token
+    const localToken = localStorage.getItem('token');
+    const sessionToken = sessionStorage.getItem('token');
+    const token = localToken || sessionToken;
+    
     if (token) {
       options.headers = {
         ...options.headers,
@@ -75,9 +79,12 @@ export const apiRequest = async <T>({
 
   // Handle authentication errors, but don't redirect if this is the login endpoint
   if (response.status === 401 && !path.includes('/auth/login')) {
-    // Clear token and redirect to login
+    // Clear tokens from both storage locations
     localStorage.removeItem('token');
-    window.location.href = '/login';
+    sessionStorage.removeItem('token');
+    
+    // Redirect to signin page (new UI)
+    window.location.href = '/signin';
     throw new Error('Authentication required');
   }
 

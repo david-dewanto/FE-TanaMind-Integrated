@@ -20,12 +20,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
   
   const navItems = [
-    { name: 'Dashboard', icon: <Home size={20} />, path: '/' },
-    { name: 'My Plants', icon: <FlowerIcon size={20} />, path: '/plants' },
-    { name: 'Watering Schedule', icon: <Droplets size={20} />, path: '/schedule' },
-    { name: 'AI Analytics', icon: <BarChart2 size={20} />, path: '/analytics' },
-    { name: 'Notifications', icon: <Bell size={20} />, path: '/notifications' },
-    { name: 'Articles', icon: <BookOpen size={20} />, path: '/articles' },
+    { name: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
+    { name: 'My Plants', icon: <FlowerIcon size={20} />, path: '/dashboard/plants' },
+    { name: 'Watering Schedule', icon: <Droplets size={20} />, path: '/dashboard/schedule' },
+    { name: 'AI Analytics', icon: <BarChart2 size={20} />, path: '/dashboard/analytics' },
+    { name: 'Notifications', icon: <Bell size={20} />, path: '/dashboard/notifications' },
+    { name: 'Articles', icon: <BookOpen size={20} />, path: '/dashboard/articles' },
   ];
 
   return (
@@ -36,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     >
       <div className="h-16 flex items-center justify-center border-b border-gray-200 md:hidden">
         <div className="flex items-center">
-          <Logo className="h-10" showText={true} linkTo="/" />
+          <Logo className="h-10" showText={true} linkTo="/dashboard" />
         </div>
       </div>
 
@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           <p className="text-[#056526] text-sm font-medium">Need help with your plants?</p>
           <p className="text-[#4D4D4D] text-xs mt-1">Explore our plant articles for tips and tricks.</p>
           <Link
-            to="/articles"
+            to="/dashboard/articles"
             className="mt-3 block w-full bg-[#0B9444] text-white text-center text-xs font-medium py-2 rounded-md hover:bg-[#056526] transition-colors"
           >
             Read Articles

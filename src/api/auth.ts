@@ -13,6 +13,7 @@ export interface User {
 export interface LoginRequest {
   username_or_email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface LoginResponse {
@@ -40,10 +41,16 @@ export const login = async (credentials: LoginRequest): Promise<User> => {
     console.log('Login attempt with:', JSON.stringify(credentials));
     const response = await post<LoginResponse>('/auth/login', credentials, undefined, false);
     
-    // Store the token in localStorage for future authenticated requests
+    // Store the token based on rememberMe preference
     if (response && response.access_token) {
       console.log('Login successful, storing token');
-      localStorage.setItem('token', response.access_token);
+      if (credentials.rememberMe) {
+        // Store in localStorage for persistent sessions (across browser restarts)
+        localStorage.setItem('token', response.access_token);
+      } else {
+        // Store in sessionStorage for temporary sessions (cleared when browser is closed)
+        sessionStorage.setItem('token', response.access_token);
+      }
       
       // Now fetch the user profile with the token
       try {
@@ -94,11 +101,14 @@ export const register = async (userData: RegisterRequest): Promise<RegisterRespo
 export const logout = async (): Promise<void> => {
   try {
     await post<void>('/auth/logout');
+    // Clear token from both storage locations
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
   } catch (error) {
     console.error('Logout failed:', error);
     // Still remove the token even if the API call fails
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
   }
 };
 
@@ -106,10 +116,20 @@ export const logout = async (): Promise<void> => {
  * Get the current logged-in user's profile
  */
 export const getCurrentUser = async (): Promise<User> => {
+  // First check if the user is authenticated
+  if (!isAuthenticated()) {
+    throw new Error('No authentication token found');
+  }
+  
   try {
     return await get<User>('/auth/me');
   } catch (error) {
     console.error('Failed to get current user:', error);
+    
+    // Clear tokens in case of auth errors
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    
     throw error;
   }
 };
@@ -142,7 +162,11 @@ export const resetPassword = async (token: string, password: string): Promise<vo
  * Check if a user is currently logged in
  */
 export const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem('token');
+  // Check both storage locations for a token
+  const localToken = localStorage.getItem('token');
+  const sessionToken = sessionStorage.getItem('token');
+  const token = localToken || sessionToken;
+  
   if (!token) return false;
   
   // Here you could also add JWT token expiration check if needed
@@ -152,12 +176,14 @@ export const isAuthenticated = (): boolean => {
     if (parts.length !== 3) {
       console.warn('Invalid token format, logging out');
       localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
       return false;
     }
     return true;
   } catch (error) {
     console.error('Error checking authentication token:', error);
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     return false;
   }
 };

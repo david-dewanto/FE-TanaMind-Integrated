@@ -10,10 +10,16 @@ import Notifications from './pages/Notifications';
 import Help from './pages/Help';
 import ArticleDetail from './pages/ArticleDetail';
 import Login from './pages/Login';
+import SignIn from './pages/SignIn';
 import Register from './pages/Register';
+import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import LandingPage from './pages/LandingPage';
+import ComingSoon from './pages/ComingSoon';
 import PrivateRoute from './components/PrivateRoute';
+import PublicRoute from './components/PublicRoute';
+import AuthRedirect from './components/AuthRedirect';
 import { AuthProvider } from './contexts/AuthContext';
 import { PlantProvider } from './contexts/PlantContext';
 import { SensorProvider } from './contexts/SensorContext';
@@ -29,15 +35,68 @@ const App: React.FC = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          {/* Root route - redirects based on authentication state */}
+          <Route path="/" element={
+            <AuthRedirect />
+          } />
+          <Route 
+            path="/landing" 
+            element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
+            } 
+          />
+          
+          {/* Auth Routes - New UI */}
+          <Route 
+            path="/signin" 
+            element={
+              <PublicRoute>
+                <SignIn />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/signup" 
+            element={
+              <PublicRoute>
+                <SignUp />
+              </PublicRoute>
+            } 
+          />
+          
+          {/* Auth Routes - Legacy paths redirected to new UI */}
+          <Route path="/login" element={<Navigate to="/signin" replace />} />
+          <Route path="/register" element={<Navigate to="/signup" replace />} />
+          <Route 
+            path="/forgot-password" 
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/reset-password" 
+            element={
+              <PublicRoute>
+                <ResetPassword />
+              </PublicRoute>
+            } 
+          />
+          
+          {/* Coming Soon Pages - show to unauthenticated users only */}
+          <Route path="/about-us" element={<PublicRoute><ComingSoon /></PublicRoute>} />
+          <Route path="/blog" element={<PublicRoute><ComingSoon /></PublicRoute>} />
+          <Route path="/contact" element={<PublicRoute><ComingSoon /></PublicRoute>} />
+          <Route path="/privacy-policy" element={<PublicRoute><ComingSoon /></PublicRoute>} />
+          <Route path="/terms-of-service" element={<PublicRoute><ComingSoon /></PublicRoute>} />
+          <Route path="/help-center" element={<PublicRoute><ComingSoon /></PublicRoute>} />
           
           {/* Protected App Routes */}
           <Route 
-            path="/*" 
+            path="/dashboard/*" 
             element={
               <PrivateRoute>
                 <PlantProvider>
@@ -61,12 +120,11 @@ const App: React.FC = () => {
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/plants" element={<Plants />} />
                             <Route path="/schedule" element={<Schedule />} />
-                            {/* Special route for analytics - completely isolated from context */}
                             <Route path="/analytics" element={<Analytics />} />
                             <Route path="/notifications" element={<Notifications />} />
                             <Route path="/articles" element={<Help />} />
                             <Route path="/articles/:slug" element={<ArticleDetail />} />
-                            <Route path="*" element={<Navigate to="/" replace />} />
+                            <Route path="*" element={<Navigate to="/dashboard" replace />} />
                           </Routes>
                         </main>
                       </div>
@@ -76,6 +134,9 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           />
+          
+          {/* Catch-all route - redirect users based on authentication state */}
+          <Route path="*" element={<AuthRedirect />} />
         </Routes>
       </Router>
     </AuthProvider>

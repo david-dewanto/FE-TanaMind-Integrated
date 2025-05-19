@@ -65,7 +65,7 @@ const Articles: React.FC = () => {
                 {articlesByCategory[category.id]?.map((article) => (
                   <div key={article.id} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
                     <Link 
-                      to={`/articles/${article.slug}`}
+                      to={`/dashboard/articles/${article.slug}`}
                       className="block hover:bg-gray-50 rounded-lg p-2 -ml-2 transition-colors"
                     >
                       <div className="flex items-center justify-between">

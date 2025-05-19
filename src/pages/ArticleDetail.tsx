@@ -375,7 +375,7 @@ const ArticleDetail: React.FC = () => {
       <div className="p-6">
         <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
           <p className="text-red-700">Article not found. The requested article does not exist or has been removed.</p>
-          <Link to="/articles" className="mt-4 inline-flex items-center text-[#0B9444] hover:underline">
+          <Link to="/dashboard/articles" className="mt-4 inline-flex items-center text-[#0B9444] hover:underline">
             <ArrowLeft size={16} className="mr-2" />
             Back to Articles
           </Link>
@@ -388,7 +388,7 @@ const ArticleDetail: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-5xl mx-auto">
         <div className="mb-6">
-          <Link to="/articles" className="inline-flex items-center text-[#0B9444] hover:underline font-medium">
+          <Link to="/dashboard/articles" className="inline-flex items-center text-[#0B9444] hover:underline font-medium">
             <ArrowLeft size={18} className="mr-2" />
             Back to Articles
           </Link>
@@ -439,9 +439,10 @@ const ArticleDetail: React.FC = () => {
                   <div className="mb-8 p-5 bg-gray-50 rounded-lg">
                     <h2 className="text-lg font-medium text-gray-800 mb-3">In this article:</h2>
                     <div className="text-[#0B9444] space-y-2">
-                      {/* Simple TOC generation based on markdown h2s */}
+                      {/* Simple TOC generation based on markdown h2s with number removal */}
                       {article.content.match(/^##\s+(.+)$/gm)?.map((match, index) => {
-                        const title = match.replace(/^##\s+/, '');
+                        // Extract the title and remove any leading numbers (e.g., "1. Snake Plant" becomes "Snake Plant")
+                        const title = match.replace(/^##\s+/, '').replace(/^\d+\.\s+/, '');
                         return (
                           <div key={index} className="flex items-center">
                             <div className="w-1.5 h-1.5 bg-[#0B9444] rounded-full mr-2"></div>
@@ -744,7 +745,7 @@ const ArticleDetail: React.FC = () => {
                 
                 {/* Article footer with navigation */}
                 <div className="mt-12 pt-6 border-t border-gray-200 flex flex-wrap items-center justify-center">
-                  <Link to="/articles" className="inline-flex items-center bg-[#DFF3E2] hover:bg-[#0B9444] text-[#0B9444] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                  <Link to="/dashboard/articles" className="inline-flex items-center bg-[#DFF3E2] hover:bg-[#0B9444] text-[#0B9444] hover:text-white py-2 px-4 rounded-lg font-medium transition-colors">
                     <ArrowLeft size={18} className="mr-2" />
                     Return to Articles
                   </Link>
@@ -772,7 +773,7 @@ const ArticleDetail: React.FC = () => {
                     {recentArticles.map(recentArticle => (
                       <Link 
                         key={recentArticle.id} 
-                        to={`/articles/${recentArticle.slug}`}
+                        to={`/dashboard/articles/${recentArticle.slug}`}
                         className="block hover:bg-gray-50 p-3 rounded-lg transition-colors block pt-4 first:pt-0"
                       >
                         <h3 className="font-medium text-gray-800 hover:text-[#0B9444] line-clamp-2 text-base">{recentArticle.title}</h3>
@@ -787,7 +788,7 @@ const ArticleDetail: React.FC = () => {
                   
                   <div className="mt-6 pt-4 border-t border-gray-100">
                     <Link 
-                      to="/articles" 
+                      to="/dashboard/articles" 
                       className="inline-flex items-center bg-[#DFF3E2] text-[#0B9444] hover:bg-[#0B9444] hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all w-full justify-center"
                     >
                       View all articles

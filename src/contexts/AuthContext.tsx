@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Function to get the current user
   const loadUser = async () => {
     if (!auth.isAuthenticated()) {
+      setUser(null);
       setIsLoading(false);
       return;
     }
@@ -50,9 +51,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const currentUser = await auth.getCurrentUser();
       setUser(currentUser);
     } catch (err) {
+      setUser(null);
       setError('Session expired. Please login again.');
-      // Clear token if unable to get current user
+      // Clear tokens if unable to get current user
       localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
     } finally {
       setIsLoading(false);
     }
