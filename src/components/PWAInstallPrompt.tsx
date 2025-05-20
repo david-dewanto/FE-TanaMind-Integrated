@@ -162,9 +162,11 @@ const PWAInstallPrompt: React.FC = () => {
       <div className="mt-4 bg-green-50 p-4 rounded-lg">
         <h3 className="font-medium text-green-800 mb-2">Android Installation Steps:</h3>
         <ol className="list-decimal ml-4 space-y-3 text-green-700">
-          <li className="flex items-center">
-            <span>Tap the menu button</span>
-            <Menu size={16} className="mx-2" />
+          <li className="flex flex-wrap items-center">
+            <div className="flex items-center mr-1">
+              <span>Tap the menu button</span>
+              <Menu size={16} className="mx-1 inline-block flex-shrink-0" />
+            </div>
             <span>in Chrome</span>
           </li>
           <li>
@@ -208,7 +210,7 @@ const PWAInstallPrompt: React.FC = () => {
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center">
-                <img src="/logo.png" alt="TanaMind Logo" className="w-16 h-16 mr-3 object-contain" />
+                <img src="/logo.png" alt="TanaMind Logo" className="w-10 h-10 mr-3 object-contain" />
                 <h2 className="text-xl font-bold text-gray-900">Install TanaMind App</h2>
               </div>
               <button 
