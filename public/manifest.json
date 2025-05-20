@@ -1,8 +1,8 @@
 {
-  "name": "TanaMind - Smart Plant Watering System",
+  "name": "TanaMind",
   "short_name": "TanaMind",
   "description": "Monitor and manage your plants with IoT integration for optimal care",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#FFFFFF",

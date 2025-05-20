@@ -8,11 +8,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'logo.png'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'logo.png', 'splashscreen.html'],
       manifest: {
-        name: 'TanaMind - Smart Plant Watering System',
+        id: '/',
+        name: 'TanaMind',
         short_name: 'TanaMind',
         description: 'Monitor and manage your plants with IoT integration for optimal care',
+        start_url: '/?source=pwa',
         theme_color: '#FFFFFF',
         icons: [
           {
