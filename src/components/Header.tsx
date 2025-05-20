@@ -52,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   };
 
   return (
-    <header className="bg-white shadow-sm z-10 relative">
+    <header className="bg-white shadow-sm z-50 sticky top-0 left-0 right-0 w-full">
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center">
           <button

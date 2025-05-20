@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Wifi, WifiOff, Leaf, Zap, RefreshCw } from 'lucide-react';
 import { Plant } from '../types';
 import { usePlants } from '../contexts/PlantContext';
 import { apiToUiPlant, uiToApiPlantRequest } from '../utils/plantConverters';
+import { ESP32PairingModal, ESP32StatusIndicator } from './ESP32';
 
 interface PlantFormProps {
   plant?: Plant; // If provided, we're editing an existing plant
@@ -35,6 +36,14 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
   const [lightMin, setLightMin] = useState(1500);
   const [lightMax, setLightMax] = useState(6000);
   
+  // IoT device states
+  const [useIotDevice, setUseIotDevice] = useState(false);
+  const [deviceType, setDeviceType] = useState<'ESP32' | 'other' | ''>('');
+  const [deviceId, setDeviceId] = useState('');
+  const [deviceIp, setDeviceIp] = useState('');
+  const [isDeviceConnected, setIsDeviceConnected] = useState(false);
+  const [showESP32Modal, setShowESP32Modal] = useState(false);
+  
   // Auto-watering
   const [autoWatering, setAutoWatering] = useState(false);
   
@@ -62,10 +71,42 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
       setLightMin(plant.thresholds.luminance.min);
       setLightMax(plant.thresholds.luminance.max);
       
+      // IoT device settings
+      if (plant.iotIntegration.deviceId) {
+        setUseIotDevice(true);
+        setDeviceId(plant.iotIntegration.deviceId);
+        setDeviceType(plant.iotIntegration.deviceType || 'other');
+        setDeviceIp(plant.iotIntegration.deviceIp || '');
+        setIsDeviceConnected(plant.iotIntegration.isConnected || false);
+      }
+      
       // Auto-watering
       setAutoWatering(plant.iotIntegration.autoWateringEnabled);
     }
   }, [plant]);
+  
+  // Handle ESP32 pairing completion
+  const handleESP32PairingSuccess = (newDeviceId: string) => {
+    setDeviceId(newDeviceId);
+    setDeviceType('ESP32');
+    setIsDeviceConnected(true);
+    setShowESP32Modal(false);
+  };
+  
+  // Function to toggle IoT device usage
+  const toggleIotDevice = (useDevice: boolean) => {
+    setUseIotDevice(useDevice);
+    if (!useDevice) {
+      // Reset device settings when disabling IoT
+      setDeviceId('');
+      setDeviceIp('');
+      setIsDeviceConnected(false);
+      setAutoWatering(false);
+    } else {
+      // Always set device type to ESP32 when enabling
+      setDeviceType('ESP32');
+    }
+  };
   
   const validateForm = (): boolean => {
     setFormError(null);
@@ -110,6 +151,12 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
       return false;
     }
     
+    // Validate IoT device settings
+    if (useIotDevice && deviceType === 'ESP32' && !deviceId) {
+      setFormError('Please pair with an ESP32 device or enter a device ID');
+      return false;
+    }
+    
     return true;
   };
   
@@ -148,8 +195,12 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
           luminance: { min: lightMin, max: lightMax },
         },
         iotIntegration: {
-          deviceId: plant?.iotIntegration.deviceId || 'new-device',
-          autoWateringEnabled: autoWatering,
+          deviceId: useIotDevice ? deviceId : '',
+          deviceType: useIotDevice ? deviceType : undefined,
+          deviceIp: useIotDevice && deviceIp ? deviceIp : undefined,
+          isConnected: useIotDevice ? isDeviceConnected : undefined,
+          lastConnected: useIotDevice && isDeviceConnected ? new Date().toISOString() : undefined,
+          autoWateringEnabled: useIotDevice ? autoWatering : false,
           lastWatered: plant?.iotIntegration.lastWatered || new Date().toISOString(),
           healthStatus: plant?.iotIntegration.healthStatus || 'good',
         },
@@ -190,6 +241,13 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      {showESP32Modal && (
+        <ESP32PairingModal
+          onClose={() => setShowESP32Modal(false)}
+          onSuccess={handleESP32PairingSuccess}
+        />
+      )}
+      
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center border-b border-gray-200 p-4">
           <h2 className="text-xl font-semibold text-[#056526]">
@@ -353,6 +411,117 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
                   </label>
                 </div>
               </div>
+            </div>
+            
+            {/* IoT Integration Section */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-gray-700 border-b pb-2 mb-4">IoT Integration</h3>
+              
+              <div className="flex items-center space-x-4 mb-4">
+                <div
+                  className={`cursor-pointer p-3 border rounded-md flex items-center space-x-2 flex-1 ${
+                    !useIotDevice 
+                      ? 'border-[#0B9444] bg-[#F3FFF6] text-[#0B9444]' 
+                      : 'border-gray-300 text-gray-500'
+                  }`}
+                  onClick={() => toggleIotDevice(false)}
+                >
+                  <Leaf size={20} />
+                  <div>
+                    <div className="font-medium">Regular Plant</div>
+                    <div className="text-xs">No IoT device</div>
+                  </div>
+                </div>
+                
+                <div
+                  className={`cursor-pointer p-3 border rounded-md flex items-center space-x-2 flex-1 ${
+                    useIotDevice 
+                      ? 'border-[#0B9444] bg-[#F3FFF6] text-[#0B9444]' 
+                      : 'border-gray-300 text-gray-500'
+                  }`}
+                  onClick={() => toggleIotDevice(true)}
+                >
+                  <Wifi size={20} />
+                  <div>
+                    <div className="font-medium">Smart Plant</div>
+                    <div className="text-xs">With IoT device</div>
+                  </div>
+                </div>
+              </div>
+              
+              {useIotDevice && (
+                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="p-3 border border-[#0B9444] bg-[#F3FFF6] rounded-md flex items-center space-x-2 mb-4">
+                    <Wifi size={18} className="text-[#0B9444]" />
+                    <span className="font-medium">ESP32 Device</span>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-medium text-gray-700">
+                        ESP32 Device ID
+                      </label>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setShowESP32Modal(true)}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 flex items-center"
+                      >
+                        <Wifi size={14} className="mr-1.5" />
+                        Pair New Device
+                      </button>
+                    </div>
+                    
+                    <input
+                      type="text"
+                      value={deviceId}
+                      onChange={(e) => setDeviceId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-2 focus:ring-[#39B54A] focus:border-transparent"
+                      placeholder="e.g. ESP32_12345"
+                      readOnly={true}
+                    />
+                    
+                    {deviceId ? (
+                      <div className="mt-2 bg-green-50 p-2 rounded-md text-green-700 text-sm flex items-center">
+                        <Check size={16} className="mr-1.5" />
+                        ESP32 device paired successfully
+                      </div>
+                    ) : (
+                      <div className="mt-2 bg-amber-50 p-2 rounded-md text-amber-700 text-sm">
+                        Please click "Pair New Device" to set up your ESP32
+                      </div>
+                    )}
+                    
+                    {deviceId && (
+                      <div className="mt-2 flex items-center text-sm">
+                        <ESP32StatusIndicator 
+                          isConnected={isDeviceConnected} 
+                          showDetails={true} 
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        id="autoWatering"
+                        type="checkbox"
+                        checked={autoWatering}
+                        onChange={(e) => setAutoWatering(e.target.checked)}
+                        disabled={!deviceId}
+                        className="h-4 w-4 text-[#0B9444] focus:ring-[#39B54A] border-gray-300 rounded disabled:opacity-50"
+                      />
+                      <label 
+                        htmlFor="autoWatering" 
+                        className={`text-sm font-medium ${deviceId ? 'text-gray-700' : 'text-gray-400'}`}
+                      >
+                        Enable automatic watering (requires connected device)
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Thresholds Section */}

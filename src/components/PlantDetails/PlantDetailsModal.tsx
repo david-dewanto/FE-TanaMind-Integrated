@@ -10,8 +10,13 @@ import {
   FileText, 
   BarChart2, 
   Edit as EditIcon, 
-  Trash2
+  Trash2,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
+import { ESP32StatusIndicator, ESP32PairingModal } from '../ESP32';
 import SensorDataChart from './SensorDataChart';
 import { usePlants } from '../../contexts/PlantContext';
 import { LoadingSpinner, ErrorMessage } from '../common';
@@ -32,8 +37,10 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
   onEdit,
   onDelete 
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'data' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'data' | 'settings' | 'device'>('overview');
   const [isWatering, setIsWatering] = useState(false);
+  const [showESP32Modal, setShowESP32Modal] = useState(false);
+  const [isRefreshingDevice, setIsRefreshingDevice] = useState(false);
   
   const { waterPlant } = usePlants();
 
@@ -82,8 +89,48 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
     }
   };
 
+  // Function to refresh device connection status
+  const refreshDeviceStatus = () => {
+    setIsRefreshingDevice(true);
+    
+    // Simulate checking device status (in a real app, this would be an API call)
+    setTimeout(() => {
+      setLocalPlant(prev => ({
+        ...prev,
+        iotIntegration: {
+          ...prev.iotIntegration,
+          isConnected: Math.random() > 0.3, // Randomly simulate connection for demo
+          lastConnected: new Date().toISOString()
+        }
+      }));
+      setIsRefreshingDevice(false);
+    }, 1500);
+  };
+  
+  // Function to handle ESP32 pairing completion
+  const handleESP32PairingSuccess = (deviceId: string) => {
+    setLocalPlant(prev => ({
+      ...prev,
+      iotIntegration: {
+        ...prev.iotIntegration,
+        deviceId: deviceId,
+        deviceType: 'ESP32',
+        isConnected: true,
+        lastConnected: new Date().toISOString()
+      }
+    }));
+    setShowESP32Modal(false);
+  };
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      {showESP32Modal && (
+        <ESP32PairingModal
+          onClose={() => setShowESP32Modal(false)}
+          onSuccess={handleESP32PairingSuccess}
+        />
+      )}
+      
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center border-b border-gray-200 p-4">
           <h2 className="text-xl font-semibold text-[#056526]">{plant.nickname}</h2>
@@ -134,6 +181,13 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
               onClick={() => setActiveTab('settings')}
             >
               Care Settings
+            </button>
+            <button
+              className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'device' ? 'text-[#0B9444] border-b-2 border-[#0B9444]' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('device')}
+            >
+              <Wifi size={16} className="mr-1" />
+              IoT Device
             </button>
           </div>
         </div>
@@ -651,6 +705,160 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                     Edit Plant
                   </button>
                 )}
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'device' && (
+            <div className="space-y-6">
+              {/* Device Status Card */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+                <h3 className="font-medium text-gray-700 mb-3 flex items-center">
+                  <Wifi size={20} className="text-[#0B9444] mr-2" />
+                  IoT Device Status
+                </h3>
+                
+                {!localPlant.iotIntegration.deviceId ? (
+                  <div className="bg-gray-50 rounded-lg p-5 text-center">
+                    <WifiOff size={36} className="text-gray-400 mx-auto mb-3" />
+                    <h4 className="text-lg font-medium text-gray-700 mb-2">No IoT Device Connected</h4>
+                    <p className="text-sm text-gray-600 mb-4">
+                      This plant is not connected to any IoT devices for automated monitoring and watering.
+                    </p>
+                    <button
+                      onClick={() => setShowESP32Modal(true)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 flex items-center mx-auto"
+                    >
+                      <Zap size={16} className="mr-2" />
+                      Connect ESP32 Device
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex justify-between mb-4">
+                      <div>
+                        <h4 className="text-base font-medium text-gray-800">
+                          {localPlant.iotIntegration.deviceType === 'ESP32' ? 'ESP32 Device' : 'IoT Device'}
+                        </h4>
+                        <p className="text-sm text-gray-600">ID: {localPlant.iotIntegration.deviceId}</p>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <ESP32StatusIndicator
+                          isConnected={localPlant.iotIntegration.isConnected || false}
+                          lastConnected={localPlant.iotIntegration.lastConnected}
+                          showDetails={true}
+                        />
+                        <button
+                          onClick={refreshDeviceStatus}
+                          disabled={isRefreshingDevice}
+                          className={`ml-3 p-2 rounded-full ${isRefreshingDevice ? 'text-gray-400' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}
+                          title="Refresh connection status"
+                        >
+                          <RefreshCw size={16} className={isRefreshingDevice ? 'animate-spin' : ''} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="bg-[#F3FFF6] p-3 rounded-lg">
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Device Status</h5>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Connection:</span>
+                          <span className={`font-medium ${localPlant.iotIntegration.isConnected ? 'text-green-600' : 'text-red-500'}`}>
+                            {localPlant.iotIntegration.isConnected ? 'Online' : 'Offline'}
+                          </span>
+                        </div>
+                        {localPlant.iotIntegration.lastConnected && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Last Seen:</span>
+                            <span className="font-medium">
+                              {formatDateTimeUTC7(localPlant.iotIntegration.lastConnected)}
+                            </span>
+                          </div>
+                        )}
+                        {localPlant.iotIntegration.deviceIp && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">IP Address:</span>
+                            <span className="font-medium">{localPlant.iotIntegration.deviceIp}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="bg-[#F3FFF6] p-3 rounded-lg">
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Automation</h5>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Auto-Watering:</span>
+                          <span className={`font-medium ${localPlant.iotIntegration.autoWateringEnabled ? 'text-green-600' : 'text-gray-500'}`}>
+                            {localPlant.iotIntegration.autoWateringEnabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Threshold:</span>
+                          <span className="font-medium">{localPlant.thresholds.soilHumidity.min}% (Soil Humidity)</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Last Watered:</span>
+                          <span className="font-medium">{formatDateTimeUTC7(localPlant.iotIntegration.lastWatered)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-700">
+                      <p>
+                        To change device settings or update the connection, please edit the plant using the edit button in the top right corner.
+                      </p>
+                    </div>
+                    
+                    <div className="flex justify-end space-x-3 mt-4">
+                      <button
+                        onClick={() => setShowESP32Modal(true)}
+                        className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 flex items-center"
+                      >
+                        <RefreshCw size={16} className="mr-2" />
+                        Reconnect Device
+                      </button>
+                      
+                      {onEdit && (
+                        <button 
+                          onClick={onEdit}
+                          className="px-4 py-2 bg-[#0B9444] text-white rounded-md text-sm font-medium hover:bg-[#056526] flex items-center"
+                        >
+                          <EditIcon size={16} className="mr-2" />
+                          Edit Device Settings
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Device Info / Help Section */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+                <h3 className="font-medium text-gray-700 mb-3">About IoT Integration</h3>
+                
+                <div className="space-y-3 text-sm text-gray-600">
+                  <p>
+                    The TanaMind platform supports IoT devices like ESP32 for real-time monitoring and automated care of your plants.
+                  </p>
+                  
+                  <h4 className="font-medium text-gray-700 mt-3">Features:</h4>
+                  <ul className="list-disc list-inside space-y-1 pl-2">
+                    <li>Real-time monitoring of soil moisture, temperature, humidity, and light</li>
+                    <li>Automated watering when soil moisture drops below threshold</li>
+                    <li>Historical data tracking and visualization</li>
+                    <li>Alerts when conditions fall outside optimal ranges</li>
+                  </ul>
+                  
+                  <h4 className="font-medium text-gray-700 mt-3">Setting Up a New Device:</h4>
+                  <ol className="list-decimal list-inside space-y-1 pl-2">
+                    <li>Power on your ESP32 device and wait for it to enter configuration mode</li>
+                    <li>Connect to the ESP32's WiFi network (typically named "ESP32_AP_Config")</li>
+                    <li>Click "Connect ESP32 Device" to start the pairing process</li>
+                    <li>Enter your home WiFi credentials to allow the ESP32 to connect to your network</li>
+                    <li>Wait for the connection to be verified</li>
+                  </ol>
+                </div>
               </div>
             </div>
           )}

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Wifi, Leaf, Check } from 'lucide-react';
 import { usePlants } from '../../contexts/PlantContext';
 import { PlantRequest } from '../../api/plants';
 import { LoadingSpinner } from '../common';
+import { ESP32PairingModal } from '../ESP32';
 
 interface AddPlantModalProps {
   onClose: () => void;
@@ -13,6 +14,10 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
   const { createPlant, isLoading, error, clearError } = usePlants();
   const [step, setStep] = useState(1);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
+  // IoT device states
+  const [showEsp32Modal, setShowEsp32Modal] = useState(false);
+  const [useIotDevice, setUseIotDevice] = useState(false);
   
   // Form states
   const [formData, setFormData] = useState<PlantRequest>({
@@ -119,6 +124,18 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
+
+  const validateStep3 = () => {
+    const errors: Record<string, string> = {};
+    
+    if (useIotDevice && !formData.device_id) {
+      errors.device_id = 'Please pair with an ESP32 device to continue';
+      setFormErrors(errors);
+      return false;
+    }
+    
+    return true;
+  };
   
   const handleNext = () => {
     if (step === 1 && validateStep1()) {
@@ -134,12 +151,31 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
     }
   };
   
+  // Handle ESP32 pairing completion
+  const handleESP32PairingSuccess = (deviceId: string) => {
+    setFormData({
+      ...formData,
+      device_id: deviceId
+    });
+    setShowEsp32Modal(false);
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (step === 3) {
+      if (!validateStep3()) {
+        return;
+      }
+
       try {
-        await createPlant(formData);
+        // Create an extended request with device type if using IoT
+        const extendedFormData = {
+          ...formData,
+          device_type: useIotDevice ? 'ESP32' : undefined
+        };
+        
+        await createPlant(extendedFormData);
         
         // Call onSuccess if provided
         if (onSuccess) {
@@ -156,6 +192,13 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
   
   return (
     <div className="fixed inset-0 z-10 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      {showEsp32Modal && (
+        <ESP32PairingModal
+          onClose={() => setShowEsp32Modal(false)}
+          onSuccess={handleESP32PairingSuccess}
+        />
+      )}
+      
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between bg-[#F3FFF6] px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-[#0B9444]">
@@ -512,42 +555,126 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
             {/* Step 3: Smart Features */}
             {step === 3 && (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Device ID (optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="device_id"
-                    value={formData.device_id}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    placeholder="e.g. ESP32_12345"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Enter your IoT device ID if you've set up a compatible device to monitor this plant. 
-                    Leave blank if you don't have a physical device.
-                  </p>
-                </div>
-                
-                <div className="flex items-center space-x-2 py-2">
-                  <input
-                    type="checkbox"
-                    id="auto_watering_enabled"
-                    name="auto_watering_enabled"
-                    checked={formData.auto_watering_enabled}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-[#0B9444] rounded border-gray-300 focus:ring-[#0B9444]"
-                  />
-                  <label htmlFor="auto_watering_enabled" className="text-sm font-medium text-gray-700">
-                    Enable automatic watering (requires compatible device)
-                  </label>
+                <div className="border-b border-gray-200 pb-4">
+                  <h3 className="font-medium text-gray-700 mb-3">IoT Integration</h3>
+                  
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div
+                      className={`cursor-pointer p-3 border rounded-md flex items-center space-x-2 flex-1 ${
+                        !useIotDevice 
+                          ? 'border-[#0B9444] bg-[#F3FFF6] text-[#0B9444]' 
+                          : 'border-gray-300 text-gray-500'
+                      }`}
+                      onClick={() => {
+                        setUseIotDevice(false);
+                        setFormData({
+                          ...formData,
+                          device_id: '',
+                          auto_watering_enabled: false
+                        });
+                      }}
+                    >
+                      <Leaf size={20} />
+                      <div>
+                        <div className="font-medium">Regular Plant</div>
+                        <div className="text-xs">No IoT device</div>
+                      </div>
+                    </div>
+                    
+                    <div
+                      className={`cursor-pointer p-3 border rounded-md flex items-center space-x-2 flex-1 ${
+                        useIotDevice 
+                          ? 'border-[#0B9444] bg-[#F3FFF6] text-[#0B9444]' 
+                          : 'border-gray-300 text-gray-500'
+                      }`}
+                      onClick={() => {
+                        setUseIotDevice(true);
+                      }}
+                    >
+                      <Wifi size={20} />
+                      <div>
+                        <div className="font-medium">Smart Plant</div>
+                        <div className="text-xs">With ESP32 device</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {useIotDevice && (
+                    <div className="mt-4 space-y-4">
+                      <div className="p-3 border border-[#0B9444] bg-[#F3FFF6] rounded-md flex items-center space-x-2 mb-4">
+                        <Wifi size={18} className="text-[#0B9444]" />
+                        <span className="font-medium">ESP32 Device</span>
+                      </div>
+                      
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-sm font-medium text-gray-700">
+                            ESP32 Device ID
+                          </label>
+                          
+                          <button
+                            type="button"
+                            onClick={() => setShowEsp32Modal(true)}
+                            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 flex items-center"
+                          >
+                            <Wifi size={14} className="mr-1.5" />
+                            Pair New Device
+                          </button>
+                        </div>
+                        
+                        <input
+                          type="text"
+                          name="device_id"
+                          value={formData.device_id}
+                          onChange={handleInputChange}
+                          className={`w-full p-2 border rounded-md ${formErrors.device_id ? 'border-red-500' : 'border-gray-300'}`}
+                          placeholder="e.g. ESP32_12345"
+                          readOnly={true}
+                        />
+                        
+                        {formErrors.device_id && (
+                          <p className="mt-1 text-sm text-red-500">{formErrors.device_id}</p>
+                        )}
+                        
+                        {formData.device_id ? (
+                          <div className="mt-2 bg-green-50 p-2 rounded-md text-green-700 text-sm flex items-center">
+                            <Check size={16} className="mr-1.5" />
+                            ESP32 device paired successfully
+                          </div>
+                        ) : (
+                          <div className="mt-2 bg-amber-50 p-2 rounded-md text-amber-700 text-sm">
+                            Please click "Pair New Device" to set up your ESP32
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 py-2">
+                        <input
+                          type="checkbox"
+                          id="auto_watering_enabled"
+                          name="auto_watering_enabled"
+                          checked={formData.auto_watering_enabled}
+                          onChange={handleInputChange}
+                          disabled={!formData.device_id}
+                          className="h-4 w-4 text-[#0B9444] rounded border-gray-300 focus:ring-[#0B9444] disabled:opacity-50"
+                        />
+                        <label 
+                          htmlFor="auto_watering_enabled" 
+                          className={`text-sm font-medium ${
+                            !formData.device_id ? 'text-gray-400' : 'text-gray-700'
+                          }`}
+                        >
+                          Enable automatic watering (requires connected device)
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="bg-[#F3FFF6] p-4 rounded-md mt-4">
                   <h3 className="font-medium text-gray-700 mb-2">Smart Features Overview</h3>
                   <p className="text-sm text-gray-600">
-                    Connecting your plant to a compatible IoT device will enable:
+                    Connecting your plant to an ESP32 device will enable:
                   </p>
                   <ul className="mt-2 text-sm text-gray-600 list-disc list-inside space-y-1">
                     <li>Real-time monitoring of soil moisture, temperature, humidity and light</li>

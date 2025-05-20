@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (userData: auth.RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  getToken: () => Promise<string | null>;
 }
 
 // Create the auth context with default values
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => {},
   logout: async () => {},
   clearError: () => {},
+  getToken: async () => null,
 });
 
 // Custom hook to use the auth context
@@ -126,6 +128,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loadUser();
   }, []);
 
+  // Get authentication token
+  const getToken = async (): Promise<string | null> => {
+    try {
+      // Check if the user is authenticated
+      if (!auth.isAuthenticated()) {
+        return null;
+      }
+      
+      // Get token from local storage or session storage
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      // If token exists, return it
+      if (token) {
+        return token;
+      }
+      
+      // If no token exists, try to refresh it
+      await loadUser();
+      
+      // Try again after refresh
+      return localStorage.getItem('token') || sessionStorage.getItem('token');
+    } catch (err) {
+      console.error('Failed to get authentication token:', err);
+      return null;
+    }
+  };
+
   // The context value
   const value = {
     user,
@@ -135,6 +164,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     clearError,
+    getToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

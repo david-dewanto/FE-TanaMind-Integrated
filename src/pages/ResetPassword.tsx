@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Lock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Lock, ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { auth } from '../api';
 import { ButtonSpinner } from '../components/common';
 import Logo from '../components/Logo';
@@ -13,6 +13,8 @@ const ResetPassword: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,6 +22,29 @@ const ResetPassword: React.FC = () => {
   // Extract token from URL
   const searchParams = new URLSearchParams(location.search);
   const token = searchParams.get('token');
+
+  const passwordStrength = () => {
+    if (!password) return { text: '', class: '' };
+    
+    const strength = {
+      weak: { text: 'Weak', class: 'text-red-500' },
+      medium: { text: 'Medium', class: 'text-yellow-500' },
+      strong: { text: 'Strong', class: 'text-green-500' },
+    };
+    
+    if (password.length < 8) return strength.weak;
+    
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+    
+    if (score <= 2) return strength.weak;
+    if (score === 3) return strength.medium;
+    return strength.strong;
+  };
 
   const validateForm = (): boolean => {
     let isValid = true;
@@ -42,6 +67,18 @@ const ResetPassword: React.FC = () => {
     } else if (password.length < 8) {
       setPasswordError('Password must be at least 8 characters long');
       isValid = false;
+    } else {
+      // Additional password strength requirements
+      const hasLower = /[a-z]/.test(password);
+      const hasUpper = /[A-Z]/.test(password);
+      const hasNumber = /\d/.test(password);
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      
+      const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+      if (score < 3) {
+        setPasswordError('Password is too weak. Include uppercase, lowercase, numbers, and special characters.');
+        isValid = false;
+      }
     }
     
     // Validate confirm password
@@ -144,12 +181,28 @@ const ResetPassword: React.FC = () => {
                 </div>
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`pl-10 pr-3 py-2 w-full border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent`}
+                  className={`pl-10 pr-10 py-2 w-full border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent`}
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} className="text-gray-400 hover:text-gray-500" />
+                  ) : (
+                    <Eye size={18} className="text-gray-400 hover:text-gray-500" />
+                  )}
+                </button>
               </div>
+              {password && (
+                <p className={`mt-1 text-sm ${passwordStrength().class}`}>
+                  Password strength: {passwordStrength().text}
+                </p>
+              )}
               {passwordError && <p className="mt-1 text-sm text-red-600">{passwordError}</p>}
             </div>
             
@@ -163,11 +216,22 @@ const ResetPassword: React.FC = () => {
                 </div>
                 <input
                   id="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`pl-10 pr-3 py-2 w-full border ${confirmPasswordError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent`}
+                  className={`pl-10 pr-10 py-2 w-full border ${confirmPasswordError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent`}
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={18} className="text-gray-400 hover:text-gray-500" />
+                  ) : (
+                    <Eye size={18} className="text-gray-400 hover:text-gray-500" />
+                  )}
+                </button>
               </div>
               {confirmPasswordError && <p className="mt-1 text-sm text-red-600">{confirmPasswordError}</p>}
             </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plant } from '../../types';
-import { Droplets, Sun, Thermometer, Check, AlertTriangle, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Droplets, Sun, Thermometer, Check, AlertTriangle, MoreVertical, Edit, Trash2, Wifi, WifiOff } from 'lucide-react';
+import { ESP32StatusIndicator } from '../ESP32';
 
 interface PlantCardProps {
   plant: Plant;
@@ -169,6 +170,26 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onClick, onEdit, onDelete 
           {getWateringIndicator()}
           {getStatus()}
         </div>
+        
+        {/* IoT Status Indicator - only show if device_id exists */}
+        {plant.iotIntegration.deviceId && (
+          <div className="mt-2 border-t pt-2 flex items-center justify-between">
+            <div className="flex items-center space-x-1 text-xs text-gray-600">
+              {plant.iotIntegration.deviceType === 'ESP32' ? (
+                <span>ESP32</span>
+              ) : (
+                <span>IoT Device</span>
+              )}
+              {plant.iotIntegration.deviceId && (
+                <span className="text-gray-400">({plant.iotIntegration.deviceId.slice(0, 8)})</span>
+              )}
+            </div>
+            <ESP32StatusIndicator 
+              isConnected={plant.iotIntegration.isConnected || false} 
+              lastConnected={plant.iotIntegration.lastConnected}
+            />
+          </div>
+        )}
 
         <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
           <div className="flex flex-col items-center">

@@ -23,8 +23,12 @@ export interface Plant {
   };
   iotIntegration: {
     deviceId: string;
+    deviceType?: 'ESP32' | 'other';
+    deviceIp?: string;
     autoWateringEnabled: boolean;
     lastWatered: string;
+    isConnected?: boolean;
+    lastConnected?: string;
     healthStatus: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
   };
   tracking: {
@@ -52,4 +56,8 @@ export interface DashboardStats {
   plantsNeedingWater: number;
   plantsNeedingAttention: number;
   autoWateredToday: number;
+  connectedDevices?: number;
 }
+
+// Re-export ESP32 types for easier imports
+export * from './esp32';

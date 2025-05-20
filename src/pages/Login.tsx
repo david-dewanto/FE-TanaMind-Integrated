@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, Mail, Lock } from 'lucide-react';
+import { LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../components/Logo';
 import { ErrorMessage, LoadingSpinner, ButtonSpinner } from '../components/common';
@@ -10,8 +10,32 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error, clearError } = useAuth();
   const navigate = useNavigate();
+
+  const passwordStrength = () => {
+    if (!password) return { text: '', class: '' };
+    
+    const strength = {
+      weak: { text: 'Weak', class: 'text-red-500' },
+      medium: { text: 'Medium', class: 'text-yellow-500' },
+      strong: { text: 'Strong', class: 'text-green-500' },
+    };
+    
+    if (password.length < 8) return strength.weak;
+    
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+    
+    if (score <= 2) return strength.weak;
+    if (score === 3) return strength.medium;
+    return strength.strong;
+  };
 
   const validateForm = (): boolean => {
     let isValid = true;
@@ -33,6 +57,9 @@ const Login: React.FC = () => {
     // Validate password
     if (!password) {
       setPasswordError('Password is required');
+      isValid = false;
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters long');
       isValid = false;
     }
     
@@ -117,13 +144,29 @@ const Login: React.FC = () => {
               </div>
               <input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`pl-10 pr-3 py-2 w-full border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent`}
+                className={`pl-10 pr-10 py-2 w-full border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent`}
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} className="text-gray-400 hover:text-gray-500" />
+                ) : (
+                  <Eye size={18} className="text-gray-400 hover:text-gray-500" />
+                )}
+              </button>
             </div>
+            {password && (
+              <p className={`mt-1 text-sm ${passwordStrength().class}`}>
+                Password strength: {passwordStrength().text}
+              </p>
+            )}
             {passwordError && <ErrorMessage message={passwordError} type="error" minimal className="mt-1" />}
           </div>
           
