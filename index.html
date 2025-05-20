@@ -16,6 +16,36 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+      /* Ensure the body has no margin/padding and covers full viewport */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        background-color: #ffffff;
+      }
+
+      /* Ensure the root div takes full height */
+      #root {
+        height: 100%;
+        width: 100%;
+      }
+
+      /* App Shell Styles to prevent flashing of white or ugly text */
+      #app-shell {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ffffff;
+        z-index: 9998;
+      }
+
       /* Splash screen styles */
       .splash-screen {
         position: fixed;
@@ -32,8 +62,8 @@
         transition: opacity 0.5s ease-out;
       }
       .splash-logo {
-        width: 120px;
-        height: 120px;
+        width: 140px;
+        height: 140px;
         object-fit: contain;
         margin-bottom: 24px;
         animation: pulse 2s infinite;
@@ -44,12 +74,14 @@
         font-weight: 700;
         color: #0B9444;
         margin-bottom: 12px;
+        text-align: center;
       }
       .splash-subtitle {
         font-family: 'Inter', sans-serif;
         font-size: 16px;
         color: #4B5563;
         margin-bottom: 32px;
+        text-align: center;
       }
       .splash-loader {
         width: 200px;
@@ -89,36 +121,100 @@
           transform: scale(1);
         }
       }
+
+      /* Offline notification */
+      .offline-alert {
+        background-color: #FEF2F2;
+        color: #991B1B;
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+        display: none;
+      }
+
+      /* Hide offline alert by default, show it when offline class is added to body */
+      body.offline .offline-alert {
+        display: block;
+      }
+
+      /* No JavaScript message */
+      .no-js-message {
+        padding: 2rem;
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .no-js-message h1 {
+        color: #0B9444;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+      }
+      .no-js-message p {
+        margin-bottom: 0.5rem;
+        color: #4B5563;
+      }
     </style>
   </head>
   <body>
+    <!-- App Shell - This will prevent white flashing during loading -->
+    <div id="app-shell"></div>
+    
     <!-- Splash Screen -->
     <div id="splash-screen" class="splash-screen">
-      <img src="/src/logo.png" alt="TanaMind Logo" class="splash-logo" />
+      <img src="/logo.png" alt="TanaMind Logo" class="splash-logo" />
       <h1 class="splash-title">TanaMind</h1>
       <p class="splash-subtitle">Smart Plant Watering System</p>
       <div class="splash-loader"></div>
     </div>
     
+    <!-- Offline alert -->
+    <div class="offline-alert">
+      You are currently offline. Some features may be limited.
+    </div>
+    
+    <!-- Main application root -->
     <div id="root"></div>
+    
     <script type="module" src="/src/main.tsx"></script>
     <script>
       // Hide splash screen when app is loaded
       window.addEventListener('load', function() {
         const splashScreen = document.getElementById('splash-screen');
+        const appShell = document.getElementById('app-shell');
+        
         if (splashScreen) {
           setTimeout(() => {
             splashScreen.style.opacity = '0';
             setTimeout(() => {
               splashScreen.style.display = 'none';
+              // Also remove the app shell once the app is loaded
+              if (appShell) {
+                appShell.style.display = 'none';
+              }
             }, 500);
           }, 1000);
         }
+        
+        // Check if we're online
+        function updateOnlineStatus() {
+          if (navigator.onLine) {
+            document.body.classList.remove('offline');
+          } else {
+            document.body.classList.add('offline');
+          }
+        }
+
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
       });
     </script>
+    
     <noscript>
-      <div style="padding: 2rem; text-align: center; font-family: 'Inter', sans-serif;">
-        <h1 style="color: #0B9444; margin-bottom: 1rem;">TanaMind</h1>
+      <div class="no-js-message">
+        <h1>TanaMind</h1>
+        <img src="/logo.png" alt="TanaMind Logo" style="width: 120px; height: 120px; margin-bottom: 20px;" />
         <p>JavaScript is required to run this application.</p>
         <p>Please enable JavaScript in your browser settings to continue.</p>
       </div>

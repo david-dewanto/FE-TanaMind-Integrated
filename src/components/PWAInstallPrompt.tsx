@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, ExternalLink, Smartphone, Info } from 'lucide-react';
+import { Download, X, ExternalLink, Smartphone, Info, Share2, Menu, ArrowRight } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -12,6 +12,8 @@ const PWAInstallPrompt: React.FC = () => {
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isIOS, setIsIOS] = useState<boolean>(false);
+  const [isAndroid, setIsAndroid] = useState<boolean>(false);
+  const [showInstructions, setShowInstructions] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if device is mobile
@@ -24,8 +26,13 @@ const PWAInstallPrompt: React.FC = () => {
       const isIOSDevice = /iphone|ipad|ipod/i.test(userAgent.toLowerCase());
       setIsIOS(isIOSDevice);
 
-      // For mobile devices, show fullscreen prompt if not already shown
-      if (isMobileDevice && !localStorage.getItem('fullscreenPromptShown')) {
+      // Check if device is Android
+      const isAndroidDevice = /android/i.test(userAgent.toLowerCase());
+      setIsAndroid(isAndroidDevice);
+
+      // For mobile devices, show fullscreen prompt if not already shown for this session
+      // We'll check sessionStorage instead of localStorage to show it each new session
+      if (isMobileDevice && !sessionStorage.getItem('fullscreenPromptShown')) {
         // Delay the fullscreen prompt to avoid interrupting initial app load
         setTimeout(() => {
           setShowFullscreenPrompt(true);
@@ -59,7 +66,7 @@ const PWAInstallPrompt: React.FC = () => {
     window.addEventListener('appinstalled', () => {
       setIsVisible(false);
       setShowFullscreenPrompt(false);
-      localStorage.setItem('fullscreenPromptShown', 'true');
+      sessionStorage.setItem('fullscreenPromptShown', 'true');
     });
     
     // Run checks
@@ -78,11 +85,9 @@ const PWAInstallPrompt: React.FC = () => {
 
   const handleInstallClick = async () => {
     if (!installPrompt) {
-      // For iOS devices we need to show manual installation instructions
-      if (isIOS) {
-        alert('To install this app on your iOS device: tap the Share icon, then "Add to Home Screen"');
-        return;
-      }
+      // If we don't have the install prompt but the user clicked install,
+      // show detailed instructions based on browser
+      setShowInstructions(true);
       return;
     }
     
@@ -108,20 +113,91 @@ const PWAInstallPrompt: React.FC = () => {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    // Store a flag in localStorage to not show the prompt again for some time
+    // Store a flag in localStorage to not show the small prompt again for some time
     localStorage.setItem('pwaPromptDismissed', Date.now().toString());
   };
 
   const handleFullscreenDismiss = () => {
     setShowFullscreenPrompt(false);
-    // Mark that we've shown the fullscreen prompt
-    localStorage.setItem('fullscreenPromptShown', 'true');
+    // Mark that we've shown the fullscreen prompt for this session
+    // Using sessionStorage means it will appear again in a new session
+    sessionStorage.setItem('fullscreenPromptShown', 'true');
   };
 
   const handleContinueInBrowser = () => {
     setShowFullscreenPrompt(false);
-    // Mark that we've shown the fullscreen prompt
-    localStorage.setItem('fullscreenPromptShown', 'true');
+    // Mark that we've shown the fullscreen prompt for this session only
+    sessionStorage.setItem('fullscreenPromptShown', 'true');
+  };
+
+  const renderIOSInstructions = () => {
+    return (
+      <div className="mt-4 bg-blue-50 p-4 rounded-lg">
+        <h3 className="font-medium text-blue-800 mb-2">iOS Installation Steps:</h3>
+        <ol className="list-decimal ml-4 space-y-3 text-blue-700">
+          <li className="flex items-center">
+            <span>Tap the Share button</span>
+            <Share2 size={16} className="mx-2" />
+            <span>in Safari</span>
+          </li>
+          <li>
+            Scroll down and tap <strong>"Add to Home Screen"</strong>
+          </li>
+          <li>
+            Tap <strong>"Add"</strong> in the top right corner
+          </li>
+          <li>
+            TanaMind is now installed on your home screen!
+          </li>
+        </ol>
+        <div className="mt-3 text-xs text-blue-600">
+          Note: PWA installation is only supported in Safari on iOS
+        </div>
+      </div>
+    );
+  };
+
+  const renderAndroidInstructions = () => {
+    return (
+      <div className="mt-4 bg-green-50 p-4 rounded-lg">
+        <h3 className="font-medium text-green-800 mb-2">Android Installation Steps:</h3>
+        <ol className="list-decimal ml-4 space-y-3 text-green-700">
+          <li className="flex items-center">
+            <span>Tap the menu button</span>
+            <Menu size={16} className="mx-2" />
+            <span>in Chrome</span>
+          </li>
+          <li>
+            Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>
+          </li>
+          <li>
+            Follow the on-screen instructions
+          </li>
+          <li>
+            TanaMind is now installed on your home screen!
+          </li>
+        </ol>
+      </div>
+    );
+  };
+
+  const renderGeneralInstructions = () => {
+    return (
+      <div className="mt-4 bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-medium text-gray-800 mb-2">Installation Steps:</h3>
+        <ol className="list-decimal ml-4 space-y-3 text-gray-700">
+          <li>
+            Look for the install icon <Download size={16} className="inline mx-1" /> in your browser's address bar
+          </li>
+          <li>
+            Click it and follow the on-screen instructions
+          </li>
+          <li>
+            If you don't see an install icon, check your browser menu
+          </li>
+        </ol>
+      </div>
+    );
   };
 
   // Render the fullscreen mobile install prompt
@@ -132,7 +208,7 @@ const PWAInstallPrompt: React.FC = () => {
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center">
-                <img src="/icons/icon-96x96.png" alt="TanaMind Logo" className="w-12 h-12 mr-3" />
+                <img src="/logo.png" alt="TanaMind Logo" className="w-16 h-16 mr-3 object-contain" />
                 <h2 className="text-xl font-bold text-gray-900">Install TanaMind App</h2>
               </div>
               <button 
@@ -144,53 +220,76 @@ const PWAInstallPrompt: React.FC = () => {
               </button>
             </div>
             
-            <div className="mb-6">
-              <p className="text-gray-700 mb-4">
-                Install TanaMind as an app on your device for the best experience:
-              </p>
-              <div className="flex flex-col gap-3 text-sm text-gray-600">
-                <div className="flex items-start">
-                  <Smartphone className="mr-2 text-[#0B9444] flex-shrink-0 mt-0.5" size={18} />
-                  <p>Access even when offline</p>
+            {!showInstructions ? (
+              <>
+                <div className="mb-6">
+                  <p className="text-gray-700 mb-4">
+                    Install TanaMind as an app on your device for the best experience:
+                  </p>
+                  <div className="flex flex-col gap-3 text-sm text-gray-600">
+                    <div className="flex items-start">
+                      <Smartphone className="mr-2 text-[#0B9444] flex-shrink-0 mt-0.5" size={18} />
+                      <p>Access even when offline</p>
+                    </div>
+                    <div className="flex items-start">
+                      <ExternalLink className="mr-2 text-[#0B9444] flex-shrink-0 mt-0.5" size={18} />
+                      <p>Launch directly from your home screen</p>
+                    </div>
+                    <div className="flex items-start">
+                      <Info className="mr-2 text-[#0B9444] flex-shrink-0 mt-0.5" size={18} />
+                      <p>Get real-time plant care notifications</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-start">
-                  <ExternalLink className="mr-2 text-[#0B9444] flex-shrink-0 mt-0.5" size={18} />
-                  <p>Launch directly from your home screen</p>
+                
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleInstallClick}
+                    className="w-full py-3 px-4 bg-[#0B9444] hover:bg-[#056526] text-white font-medium rounded-lg flex items-center justify-center"
+                  >
+                    <Download size={18} className="mr-2" />
+                    Install App
+                  </button>
+                  <button
+                    onClick={handleContinueInBrowser}
+                    className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
+                  >
+                    Continue in Browser
+                  </button>
                 </div>
-                <div className="flex items-start">
-                  <Info className="mr-2 text-[#0B9444] flex-shrink-0 mt-0.5" size={18} />
-                  <p>Get real-time plant care notifications</p>
+              </>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                    How to Install TanaMind
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Follow these steps to add TanaMind to your home screen:
+                  </p>
                 </div>
-              </div>
-            </div>
-            
-            {isIOS ? (
-              <div className="bg-blue-50 p-3 rounded-lg mb-4 text-sm">
-                <p className="font-medium text-blue-800 mb-1">iOS Installation:</p>
-                <p className="text-blue-700">
-                  Tap the share icon <span className="px-2 py-1 bg-blue-100 rounded">Share</span> at the bottom of your screen, 
-                  then select "Add to Home Screen"
-                </p>
-              </div>
-            ) : null}
-            
-            <div className="flex flex-col gap-3">
-              {!isIOS && (
-                <button
-                  onClick={handleInstallClick}
-                  className="w-full py-3 px-4 bg-[#0B9444] hover:bg-[#056526] text-white font-medium rounded-lg flex items-center justify-center"
-                >
-                  <Download size={18} className="mr-2" />
-                  Install App
-                </button>
-              )}
-              <button
-                onClick={handleContinueInBrowser}
-                className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
-              >
-                Continue in Browser
-              </button>
-            </div>
+                
+                {isIOS ? renderIOSInstructions() : null}
+                {isAndroid ? renderAndroidInstructions() : null}
+                {!isIOS && !isAndroid ? renderGeneralInstructions() : null}
+                
+                <div className="mt-6 flex flex-col gap-3">
+                  <button
+                    onClick={() => setShowInstructions(false)}
+                    className="w-full py-2 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 flex items-center justify-center"
+                  >
+                    <ArrowRight size={16} className="mr-2 rotate-180" />
+                    Back
+                  </button>
+                  <button
+                    onClick={handleContinueInBrowser}
+                    className="w-full py-2 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
+                  >
+                    Continue in Browser
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

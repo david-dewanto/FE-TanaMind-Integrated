@@ -4,7 +4,7 @@
   "description": "Monitor and manage your plants with IoT integration for optimal care",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#FFFFFF",
   "theme_color": "#FFFFFF",
   "orientation": "portrait-primary",
   "icons": [
