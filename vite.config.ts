@@ -11,8 +11,8 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'logo.png', 'splashscreen.html'],
       manifest: {
         id: '/',
-        name: 'TanaMind',
-        short_name: 'TanaMind',
+        name: '',
+        short_name: '',
         description: 'Monitor and manage your plants with IoT integration for optimal care',
         start_url: '/?source=pwa',
         theme_color: '#FFFFFF',

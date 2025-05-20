@@ -1,6 +1,6 @@
 {
-  "name": "TanaMind",
-  "short_name": "TanaMind",
+  "name": "",
+  "short_name": "",
   "description": "Monitor and manage your plants with IoT integration for optimal care",
   "start_url": "/?source=pwa",
   "display": "standalone",
