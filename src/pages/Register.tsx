@@ -77,12 +77,15 @@ const Register: React.FC = () => {
     }
     
     try {
-      await register({ username, email, password });
+      // Convert email to lowercase before sending to the backend
+      const emailLowercase = email.toLowerCase();
+      
+      await register({ username, email: emailLowercase, password });
       // After successful registration, show verification message
       setRegistrationSuccess(true);
       
       // Save the email for potential resend verification
-      setRegisteredEmail(email);
+      setRegisteredEmail(emailLowercase);
       
       // Clear form for security
       setUsername('');

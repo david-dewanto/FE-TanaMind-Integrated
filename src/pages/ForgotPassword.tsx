@@ -42,8 +42,11 @@ const ForgotPassword: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
+      // Convert email to lowercase before sending to the backend
+      const emailLowercase = email.toLowerCase();
+      
       // Call the forgotPassword function from auth
-      await auth.forgotPassword(email);
+      await auth.forgotPassword(emailLowercase);
       
       // Mark as success to show success message
       setIsSuccess(true);

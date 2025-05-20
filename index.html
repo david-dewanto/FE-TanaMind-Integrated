@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0B9444" />
+    <meta name="theme-color" content="#FFFFFF" />
     <meta name="description" content="TanaMind - Smart plant monitoring and watering system with IoT integration" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -15,10 +15,107 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      /* Splash screen styles */
+      .splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out;
+      }
+      .splash-logo {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        margin-bottom: 24px;
+        animation: pulse 2s infinite;
+      }
+      .splash-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #0B9444;
+        margin-bottom: 12px;
+      }
+      .splash-subtitle {
+        font-family: 'Inter', sans-serif;
+        font-size: 16px;
+        color: #4B5563;
+        margin-bottom: 32px;
+      }
+      .splash-loader {
+        width: 200px;
+        height: 4px;
+        background-color: #E5E7EB;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+      .splash-loader::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 40%;
+        background-color: #0B9444;
+        border-radius: 4px;
+        animation: loading 1.5s infinite ease-in-out;
+      }
+      @keyframes loading {
+        0% { 
+          transform: translateX(-100%);
+        }
+        100% { 
+          transform: translateX(350%);
+        }
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    </style>
   </head>
   <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+      <img src="/icons/icon-192x192.png" alt="TanaMind Logo" class="splash-logo" />
+      <h1 class="splash-title">TanaMind</h1>
+      <p class="splash-subtitle">Smart Plant Watering System</p>
+      <div class="splash-loader"></div>
+    </div>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Hide splash screen when app is loaded
+      window.addEventListener('load', function() {
+        const splashScreen = document.getElementById('splash-screen');
+        if (splashScreen) {
+          setTimeout(() => {
+            splashScreen.style.opacity = '0';
+            setTimeout(() => {
+              splashScreen.style.display = 'none';
+            }, 500);
+          }, 1000);
+        }
+      });
+    </script>
     <noscript>
       <div style="padding: 2rem; text-align: center; font-family: 'Inter', sans-serif;">
         <h1 style="color: #0B9444; margin-bottom: 1rem;">TanaMind</h1>

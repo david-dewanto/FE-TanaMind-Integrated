@@ -13,7 +13,7 @@ export default defineConfig({
         name: 'TanaMind - Smart Plant Watering System',
         short_name: 'TanaMind',
         description: 'Monitor and manage your plants with IoT integration for optimal care',
-        theme_color: '#0B9444',
+        theme_color: '#FFFFFF',
         icons: [
           {
             src: 'icons/icon-72x72.png',

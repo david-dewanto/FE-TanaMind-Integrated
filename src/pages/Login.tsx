@@ -47,9 +47,12 @@ const Login: React.FC = () => {
     }
     
     try {
+      // Convert email to lowercase before sending to backend
+      const emailInput = email.includes('@') ? email.toLowerCase() : email;
+      
       // If login succeeds, then the email is verified and we received a token
       // The AuthContext.login function will store the token and set the user
-      await login({ username_or_email: email, password });
+      await login({ username_or_email: emailInput, password });
       
       // Navigate to the dashboard after successful login
       navigate('/');
