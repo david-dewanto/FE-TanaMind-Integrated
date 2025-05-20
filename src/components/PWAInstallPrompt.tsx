@@ -136,10 +136,10 @@ const PWAInstallPrompt: React.FC = () => {
         <h3 className="font-medium text-blue-800 mb-2">iOS Installation Steps:</h3>
         <ol className="list-decimal ml-6 space-y-3 text-blue-700">
           <li className="ml-0">
-            <div className="flex items-center">
-              <span>Tap the Share button</span>
-              <Share2 size={16} className="mx-1 inline-block flex-shrink-0" />
-              <span>in Safari</span>
+            <div className="pl-1">
+              Tap the Share button
+              <Share2 size={16} className="mx-1 inline align-text-bottom text-blue-600" />
+              in Safari
             </div>
           </li>
           <li className="ml-0">
@@ -165,10 +165,10 @@ const PWAInstallPrompt: React.FC = () => {
         <h3 className="font-medium text-green-800 mb-2">Android Installation Steps:</h3>
         <ol className="list-decimal ml-6 space-y-3 text-green-700">
           <li className="ml-0">
-            <div className="flex items-center">
-              <span>Tap the menu button</span>
-              <Menu size={16} className="mx-1 inline-block flex-shrink-0" />
-              <span>in Chrome</span>
+            <div className="pl-1">
+              Tap the menu button 
+              <Menu size={16} className="mx-1 inline align-text-bottom text-green-600" /> 
+              in Chrome
             </div>
           </li>
           <li className="ml-0">
@@ -191,10 +191,10 @@ const PWAInstallPrompt: React.FC = () => {
         <h3 className="font-medium text-gray-800 mb-2">Installation Steps:</h3>
         <ol className="list-decimal ml-6 space-y-3 text-gray-700">
           <li className="ml-0">
-            <div className="flex items-center">
-              <span>Look for the install icon </span>
-              <Download size={16} className="mx-1 inline-block flex-shrink-0" />
-              <span> in your browser's address bar</span>
+            <div className="pl-1">
+              Look for the install icon
+              <Download size={16} className="mx-1 inline align-text-bottom text-gray-600" />
+              in your browser's address bar
             </div>
           </li>
           <li className="ml-0">

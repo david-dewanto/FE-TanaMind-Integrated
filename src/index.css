@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global scrolling fix */
+html, body {
+  height: auto;
+  min-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 /* Article content styling */
 .prose p {
   margin-top: 1.5em !important;
