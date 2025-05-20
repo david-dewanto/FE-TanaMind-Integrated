@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
@@ -23,17 +23,46 @@ import AuthRedirect from './components/AuthRedirect';
 import { AuthProvider } from './contexts/AuthContext';
 import { PlantProvider } from './contexts/PlantContext';
 import { SensorProvider } from './contexts/SensorContext';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+
+// Lazy load offline functionality components
+const OfflineAlert = React.lazy(() => import('./components/OfflineAlert'));
 
 const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+  
+  // Monitor online/offline status for the PWA
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return (
     <AuthProvider>
       <Router>
+        {/* PWA Install Prompt - shown on compatible devices/browsers */}
+        <PWAInstallPrompt />
+        
+        {/* Offline alert - shown when the user is offline */}
+        {!isOnline && (
+          <React.Suspense fallback={null}>
+            <OfflineAlert />
+          </React.Suspense>
+        )}
+        
         <Routes>
           {/* Root route - redirects based on authentication state */}
           <Route path="/" element={

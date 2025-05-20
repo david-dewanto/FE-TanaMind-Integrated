@@ -1,10 +1,10 @@
-# TanaMind - Smart Plant Monitoring Frontend
+# TanaMind - Smart Plant Monitoring Frontend (PWA)
 
 https://tanamind.site
 
 ## 🌱 Overview
 
-TanaMind is a smart plant monitoring and watering system that helps users take care of their plants with IoT technology. This repository contains the frontend application built with React, TypeScript, and Tailwind CSS. The application connects to a backend API that manages user authentication, plant data, and sensor readings.
+TanaMind is a smart plant monitoring and watering system that helps users take care of their plants with IoT technology. This repository contains the frontend application built with React, TypeScript, and Tailwind CSS. The application connects to a backend API that manages user authentication, plant data, and sensor readings. TanaMind is now a Progressive Web App (PWA), allowing for offline functionality and installation on devices.
 
 ## ✨ Features
 
@@ -33,6 +33,13 @@ TanaMind is a smart plant monitoring and watering system that helps users take c
   - Watering and fertilizing tips
   - Troubleshooting common issues
 
+- **Progressive Web App (PWA)**
+  - Offline functionality
+  - Installable on desktop and mobile
+  - Background data synchronization
+  - Responsive design for all devices
+  - Automatic updates
+
 ## 🧰 Tech Stack
 
 - **Frontend Framework**: React 18
@@ -44,6 +51,7 @@ TanaMind is a smart plant monitoring and watering system that helps users take c
 - **Markdown Rendering**: Marked
 - **Build Tool**: Vite
 - **Deployment**: Netlify
+- **PWA Support**: vite-plugin-pwa & Workbox
 
 ## 📋 Prerequisites
 
@@ -93,22 +101,47 @@ The API documentation is available at:
 https://automatic-watering-system.web.id/docs
 ```
 
+## 📱 PWA Features
+
+TanaMind is now a Progressive Web App with the following capabilities:
+
+- **Offline Functionality**: Continue using the app without an internet connection
+- **Installable**: Add to home screen on mobile devices or install on desktop
+- **Data Synchronization**: Changes made offline are synchronized when back online
+- **Responsive Design**: Works on all device sizes and orientations
+- **Automatic Updates**: Service worker ensures users have the latest version
+
+For more information about PWA implementation, see:
+- [PWA-DOCUMENTATION.md](PWA-DOCUMENTATION.md) - Detailed documentation of PWA features
+- [PWA-TESTING-PLAN.md](PWA-TESTING-PLAN.md) - Testing guidelines for PWA functionality
+
 ## 📁 Project Structure
 
 ```
-src/
-├── api/               # API client and service functions
-├── components/        # UI components
-│   ├── common/        # Shared components (buttons, inputs, etc.)
-│   ├── Dashboard/     # Dashboard-specific components
-│   └── PlantDetails/  # Plant details components
-├── contexts/          # React context providers
-├── data/              # Mock data and constants
-├── pages/             # Page components
-├── types/             # TypeScript type definitions
-├── utils/             # Utility functions
-├── App.tsx            # Main application component
-└── main.tsx           # Application entry point
+/
+├── public/              # Static assets
+│   ├── icons/           # App icons for various sizes
+│   ├── manifest.json    # Web App Manifest
+│   └── favicon.ico      # Favicon
+├── src/
+│   ├── api/             # API client and service functions
+│   ├── components/      # UI components
+│   │   ├── common/      # Shared components (buttons, inputs, etc.)
+│   │   ├── Dashboard/   # Dashboard-specific components
+│   │   └── PlantDetails/# Plant details components
+│   ├── contexts/        # React context providers
+│   ├── data/            # Mock data and constants
+│   ├── pages/           # Page components
+│   ├── types/           # TypeScript type definitions
+│   ├── utils/           # Utility functions
+│   │   ├── offlineStorage.ts # Offline data management
+│   │   └── syncService.ts    # Data synchronization
+│   ├── App.tsx          # Main application component
+│   ├── main.tsx         # Application entry point
+│   └── registerSW.ts    # Service Worker registration
+├── PWA-DOCUMENTATION.md # PWA features documentation
+├── PWA-TESTING-PLAN.md  # Testing plan for PWA functionality
+└── README.md            # This file
 ```
 
 ## 🧪 Testing
@@ -119,6 +152,8 @@ npm run lint
 # or
 yarn lint
 ```
+
+To test PWA features, follow the guidelines in [PWA-TESTING-PLAN.md](PWA-TESTING-PLAN.md).
 
 ## 🤝 Contributing
 
