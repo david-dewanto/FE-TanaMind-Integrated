@@ -30,9 +30,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
   return (
     <aside 
-      className={`fixed top-0 left-0 z-40 w-64 bg-white shadow-lg transform h-full ${
+      className={`fixed top-[56px] sm:top-0 bottom-0 left-0 z-30 w-64 bg-white shadow-lg transform ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      } transition-transform duration-300 ease-in-out lg:pt-0 pt-16`}
+      } transition-transform duration-300 ease-in-out`}
     >
       <div className="h-16 flex items-center justify-center border-b border-gray-200 md:hidden">
         <div className="flex items-center">

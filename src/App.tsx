@@ -133,18 +133,18 @@ const App: React.FC = () => {
                     <div className="min-h-screen bg-gray-100 flex flex-col">
                       <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
                       
-                      <div className="flex flex-1 relative pt-0">
+                      <div className="flex flex-1 relative">
                         {/* Overlay that appears when sidebar is open */}
                         {isSidebarOpen && (
                           <div 
-                            className="fixed inset-0 bg-black bg-opacity-25 z-30 transition-opacity duration-300"
+                            className="fixed inset-0 bg-black bg-opacity-25 z-40 transition-opacity duration-300"
                             onClick={toggleSidebar}
                           ></div>
                         )}
                         
                         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
                         
-                        <main className="flex-1 transition-all duration-300 overflow-auto pb-4">
+                        <main className="flex-1 transition-all duration-300 pt-0 sm:pt-0">
                           <Routes>
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/plants" element={<Plants />} />
