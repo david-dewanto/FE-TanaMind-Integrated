@@ -134,19 +134,21 @@ const PWAInstallPrompt: React.FC = () => {
     return (
       <div className="mt-4 bg-blue-50 p-4 rounded-lg">
         <h3 className="font-medium text-blue-800 mb-2">iOS Installation Steps:</h3>
-        <ol className="list-decimal ml-4 space-y-3 text-blue-700">
-          <li className="flex items-center">
-            <span>Tap the Share button</span>
-            <Share2 size={16} className="mx-2" />
-            <span>in Safari</span>
+        <ol className="list-decimal ml-6 space-y-3 text-blue-700">
+          <li className="ml-0">
+            <div className="flex items-center">
+              <span>Tap the Share button</span>
+              <Share2 size={16} className="mx-1 inline-block flex-shrink-0" />
+              <span>in Safari</span>
+            </div>
           </li>
-          <li>
+          <li className="ml-0">
             Scroll down and tap <strong>"Add to Home Screen"</strong>
           </li>
-          <li>
+          <li className="ml-0">
             Tap <strong>"Add"</strong> in the top right corner
           </li>
-          <li>
+          <li className="ml-0">
             TanaMind is now installed on your home screen!
           </li>
         </ol>
@@ -161,21 +163,21 @@ const PWAInstallPrompt: React.FC = () => {
     return (
       <div className="mt-4 bg-green-50 p-4 rounded-lg">
         <h3 className="font-medium text-green-800 mb-2">Android Installation Steps:</h3>
-        <ol className="list-decimal ml-4 space-y-3 text-green-700">
-          <li className="flex flex-wrap items-center">
-            <div className="flex items-center mr-1">
+        <ol className="list-decimal ml-6 space-y-3 text-green-700">
+          <li className="ml-0">
+            <div className="flex items-center">
               <span>Tap the menu button</span>
               <Menu size={16} className="mx-1 inline-block flex-shrink-0" />
+              <span>in Chrome</span>
             </div>
-            <span>in Chrome</span>
           </li>
-          <li>
+          <li className="ml-0">
             Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>
           </li>
-          <li>
+          <li className="ml-0">
             Follow the on-screen instructions
           </li>
-          <li>
+          <li className="ml-0">
             TanaMind is now installed on your home screen!
           </li>
         </ol>
@@ -187,14 +189,18 @@ const PWAInstallPrompt: React.FC = () => {
     return (
       <div className="mt-4 bg-gray-50 p-4 rounded-lg">
         <h3 className="font-medium text-gray-800 mb-2">Installation Steps:</h3>
-        <ol className="list-decimal ml-4 space-y-3 text-gray-700">
-          <li>
-            Look for the install icon <Download size={16} className="inline mx-1" /> in your browser's address bar
+        <ol className="list-decimal ml-6 space-y-3 text-gray-700">
+          <li className="ml-0">
+            <div className="flex items-center">
+              <span>Look for the install icon </span>
+              <Download size={16} className="mx-1 inline-block flex-shrink-0" />
+              <span> in your browser's address bar</span>
+            </div>
           </li>
-          <li>
+          <li className="ml-0">
             Click it and follow the on-screen instructions
           </li>
-          <li>
+          <li className="ml-0">
             If you don't see an install icon, check your browser menu
           </li>
         </ol>
