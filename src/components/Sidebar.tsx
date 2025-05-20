@@ -34,11 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } transition-transform duration-300 ease-in-out`}
     >
-      <div className="h-16 flex items-center justify-center border-b border-gray-200 md:hidden">
-        <div className="flex items-center">
-          <Logo className="h-10" showText={true} linkTo="/dashboard" />
-        </div>
-      </div>
+      {/* Hidden logo - removed to prevent duplicate logos */}
 
       <div className="p-5">
         <div className="flex justify-between items-center mb-4">
