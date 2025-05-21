@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TanaMind ESP32 Diagnostic Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7f9;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            overflow: hidden;
+        }
+        h1 {
+            margin-top: 0;
+            color: #0B9444;
+            border-bottom: 2px solid #e0f3e9;
+            padding-bottom: 10px;
+        }
+        .panel {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            background: #fff;
+            overflow: hidden;
+        }
+        .panel-header {
+            background: #f3fff6;
+            padding: 12px 15px;
+            font-weight: 600;
+            border-bottom: 1px solid #e0e0e0;
+            color: #0B9444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-body {
+            padding: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #0B9444;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+            margin-right: 5px;
+        }
+        button:hover {
+            background: #097a38;
+        }
+        button.secondary {
+            background: #f3f3f3;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        button.secondary:hover {
+            background: #e7e7e7;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .log-container {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin-bottom: 3px;
+            padding: 3px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .log-entry-time {
+            color: #777;
+            margin-right: 5px;
+        }
+        .log-entry-success {
+            color: #0B9444;
+        }
+        .log-entry-error {
+            color: #d73a49;
+        }
+        .log-entry-info {
+            color: #0366d6;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: #ccc;
+        }
+        .status-connected {
+            background-color: #28a745;
+        }
+        .status-disconnected {
+            background-color: #dc3545;
+        }
+        .status-pending {
+            background-color: #ffc107;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            background: #f9f9f9;
+        }
+        .tab.active {
+            border-bottom-color: #0B9444;
+            color: #0B9444;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .code-block {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+            white-space: pre;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TanaMind ESP32 Diagnostic Tool</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="connection">Connection Tests</div>
+            <div class="tab" data-tab="token">Token Tests</div>
+            <div class="tab" data-tab="wifi">Wi-Fi Config</div>
+            <div class="tab" data-tab="status">Status</div>
+            <div class="tab" data-tab="help">Help</div>
+        </div>
+
+        <div class="tab-content active" id="connection-tab">
+            <div class="panel">
+                <div class="panel-header">
+                    ESP32 Connection Test
+                    <div>
+                        <span class="status-indicator" id="connectionStatus"></span>
+                        <span id="connectionStatusText">Checking...</span>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <p>This test checks if your device can connect to the ESP32 in AP mode.</p>
+                    
+                    <div class="form-group">
+                        <label for="esp32IpAddress">ESP32 IP Address</label>
+                        <input type="text" id="esp32IpAddress" value="192.168.4.1">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="testConnection">Test Connection</button>
+                        <button id="pingESP32" class="secondary">Ping All Endpoints</button>
+                    </div>
+                    
+                    <div class="log-container" id="connectionLogs"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="token-tab">
+            <div class="panel">
+                <div class="panel-header">
+                    ESP32 Token Test
+                </div>
+                <div class="panel-body">
+                    <p>Send a token to the ESP32 using different methods.</p>
+                    
+                    <div class="form-group">
+                        <label for="tokenValue">Token Value</label>
+                        <input type="text" id="tokenValue" value="test_token_123">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="sendTokenFormData">Send as FormData</button>
+                        <button id="sendTokenUrlParams">Send as URL Params</button>
+                        <button id="sendTokenQueryParam">Send as Query Param</button>
+                        <button id="sendTokenJson" class="secondary">Send as JSON</button>
+                    </div>
+                    
+                    <div class="log-container" id="tokenLogs"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="wifi-tab">
+            <div class="panel">
+                <div class="panel-header">
+                    ESP32 Wi-Fi Configuration
+                </div>
+                <div class="panel-body">
+                    <p>Configure the ESP32 with Wi-Fi credentials.</p>
+                    
+                    <div class="form-group">
+                        <label for="wifiSSID">Wi-Fi SSID</label>
+                        <input type="text" id="wifiSSID" placeholder="Your Wi-Fi name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="wifiPassword">Wi-Fi Password</label>
+                        <input type="password" id="wifiPassword" placeholder="Your Wi-Fi password">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="configureWifi">Configure Wi-Fi</button>
+                    </div>
+                    
+                    <div class="log-container" id="wifiLogs"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="status-tab">
+            <div class="panel">
+                <div class="panel-header">
+                    ESP32 Status Check
+                </div>
+                <div class="panel-body">
+                    <p>Check the current status of the ESP32 device.</p>
+                    
+                    <div class="button-group">
+                        <button id="checkStatus">Check Status</button>
+                        <button id="checkInfo" class="secondary">Get Device Info</button>
+                    </div>
+                    
+                    <div class="log-container" id="statusLogs"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="help-tab">
+            <div class="panel">
+                <div class="panel-header">
+                    Help & Troubleshooting
+                </div>
+                <div class="panel-body">
+                    <h3>Common Issues</h3>
+                    
+                    <h4>Cannot connect to ESP32 AP</h4>
+                    <p>Make sure your ESP32 is powered on and in AP mode. The blue LED should be flashing.</p>
+                    <p>Check that you're connected to the "TanaMind_Setup" Wi-Fi network.</p>
+                    
+                    <h4>CORS Errors</h4>
+                    <p>If you see CORS errors in the console, the ESP32 might not be sending the correct CORS headers.</p>
+                    <p>The ESP32 code should include:</p>
+                    <div class="code-block">void addCORSHeaders() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cache-Control, Pragma, Origin, Accept, X-Requested-With");
+  server.sendHeader("Access-Control-Max-Age", "86400");
+}</div>
+                    
+                    <h4>Token not received by ESP32</h4>
+                    <p>Check the serial monitor for debug messages when sending tokens.</p>
+                    <p>Try different token sending methods (FormData, URL Params, Query Param).</p>
+                    <p>Make sure the ESP32 code properly handles different token formats.</p>
+                    
+                    <h4>Network transition issues</h4>
+                    <p>The ESP32 should maintain its AP while connecting to Wi-Fi.</p>
+                    <p>After connecting to Wi-Fi, use the status check endpoint to verify it's connected.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching logic
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs and content
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabName = this.getAttribute('data-tab');
+                    document.getElementById(`${tabName}-tab`).classList.add('active');
+                });
+            });
+            
+            // Get DOM elements
+            const connectionStatusIndicator = document.getElementById('connectionStatus');
+            const connectionStatusText = document.getElementById('connectionStatusText');
+            const esp32IpInput = document.getElementById('esp32IpAddress');
+            const testConnectionBtn = document.getElementById('testConnection');
+            const pingESP32Btn = document.getElementById('pingESP32');
+            const connectionLogsDiv = document.getElementById('connectionLogs');
+            
+            const tokenInput = document.getElementById('tokenValue');
+            const sendTokenFormDataBtn = document.getElementById('sendTokenFormData');
+            const sendTokenUrlParamsBtn = document.getElementById('sendTokenUrlParams');
+            const sendTokenQueryParamBtn = document.getElementById('sendTokenQueryParam');
+            const sendTokenJsonBtn = document.getElementById('sendTokenJson');
+            const tokenLogsDiv = document.getElementById('tokenLogs');
+            
+            const wifiSSIDInput = document.getElementById('wifiSSID');
+            const wifiPasswordInput = document.getElementById('wifiPassword');
+            const configureWifiBtn = document.getElementById('configureWifi');
+            const wifiLogsDiv = document.getElementById('wifiLogs');
+            
+            const checkStatusBtn = document.getElementById('checkStatus');
+            const checkInfoBtn = document.getElementById('checkInfo');
+            const statusLogsDiv = document.getElementById('statusLogs');
+            
+            // Helper function to add log entries
+            function addLog(container, message, type = 'info') {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry log-entry-${type}`;
+                
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'log-entry-time';
+                timeSpan.textContent = new Date().toLocaleTimeString() + ': ';
+                
+                logEntry.appendChild(timeSpan);
+                logEntry.appendChild(document.createTextNode(message));
+                
+                container.appendChild(logEntry);
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            // Test Connection function
+            testConnectionBtn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                if (!ipAddress) {
+                    addLog(connectionLogsDiv, 'Please enter an IP address', 'error');
+                    return;
+                }
+                
+                connectionStatusIndicator.className = 'status-indicator status-pending';
+                connectionStatusText.textContent = 'Connecting...';
+                
+                addLog(connectionLogsDiv, `Testing connection to ${ipAddress}...`);
+                
+                try {
+                    const response = await fetch(`http://${ipAddress}`, {
+                        method: 'GET',
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    addLog(connectionLogsDiv, `Got response: type=${response.type}, status=${response.status}`, 'success');
+                    addLog(connectionLogsDiv, 'Connection successful!', 'success');
+                    
+                    connectionStatusIndicator.className = 'status-indicator status-connected';
+                    connectionStatusText.textContent = 'Connected';
+                } catch (error) {
+                    addLog(connectionLogsDiv, `Connection error: ${error.message}`, 'error');
+                    connectionStatusIndicator.className = 'status-indicator status-disconnected';
+                    connectionStatusText.textContent = 'Disconnected';
+                }
+            });
+            
+            // Ping all ESP32 endpoints
+            pingESP32Btn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                if (!ipAddress) {
+                    addLog(connectionLogsDiv, 'Please enter an IP address', 'error');
+                    return;
+                }
+                
+                addLog(connectionLogsDiv, `Pinging all ESP32 endpoints at ${ipAddress}...`);
+                
+                const endpoints = [
+                    '/',
+                    '/set_wifi',
+                    '/set_token',
+                    '/connection_status',
+                    '/info'
+                ];
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        addLog(connectionLogsDiv, `Pinging ${endpoint}...`);
+                        
+                        const response = await fetch(`http://${ipAddress}${endpoint}`, {
+                            method: 'HEAD',
+                            mode: 'no-cors',
+                            signal: AbortSignal.timeout(3000)
+                        });
+                        
+                        addLog(connectionLogsDiv, `${endpoint}: type=${response.type}, status=${response.status}`, 'success');
+                    } catch (error) {
+                        addLog(connectionLogsDiv, `${endpoint}: Error - ${error.message}`, 'error');
+                    }
+                }
+                
+                addLog(connectionLogsDiv, 'Ping test completed');
+            });
+            
+            // Send token functions
+            sendTokenFormDataBtn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                const token = tokenInput.value.trim();
+                
+                if (!token) {
+                    addLog(tokenLogsDiv, 'Please enter a token value', 'error');
+                    return;
+                }
+                
+                addLog(tokenLogsDiv, `Sending token via FormData to ${ipAddress}/set_token...`);
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('token', token);
+                    
+                    const response = await fetch(`http://${ipAddress}/set_token`, {
+                        method: 'POST',
+                        body: formData,
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    addLog(tokenLogsDiv, `Response: type=${response.type}, status=${response.status}`, 'success');
+                    addLog(tokenLogsDiv, 'Token sent via FormData!', 'success');
+                } catch (error) {
+                    addLog(tokenLogsDiv, `Error: ${error.message}`, 'error');
+                }
+            });
+            
+            sendTokenUrlParamsBtn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                const token = tokenInput.value.trim();
+                
+                if (!token) {
+                    addLog(tokenLogsDiv, 'Please enter a token value', 'error');
+                    return;
+                }
+                
+                addLog(tokenLogsDiv, `Sending token via URLSearchParams to ${ipAddress}/set_token...`);
+                
+                try {
+                    const params = new URLSearchParams();
+                    params.append('token', token);
+                    
+                    const response = await fetch(`http://${ipAddress}/set_token`, {
+                        method: 'POST',
+                        body: params,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    addLog(tokenLogsDiv, `Response: type=${response.type}, status=${response.status}`, 'success');
+                    addLog(tokenLogsDiv, 'Token sent via URLSearchParams!', 'success');
+                } catch (error) {
+                    addLog(tokenLogsDiv, `Error: ${error.message}`, 'error');
+                }
+            });
+            
+            sendTokenQueryParamBtn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                const token = tokenInput.value.trim();
+                
+                if (!token) {
+                    addLog(tokenLogsDiv, 'Please enter a token value', 'error');
+                    return;
+                }
+                
+                addLog(tokenLogsDiv, `Sending token via query parameter to ${ipAddress}/set_token?token=...`);
+                
+                try {
+                    const response = await fetch(`http://${ipAddress}/set_token?token=${encodeURIComponent(token)}`, {
+                        method: 'GET',
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    addLog(tokenLogsDiv, `Response: type=${response.type}, status=${response.status}`, 'success');
+                    addLog(tokenLogsDiv, 'Token sent via query parameter!', 'success');
+                } catch (error) {
+                    addLog(tokenLogsDiv, `Error: ${error.message}`, 'error');
+                }
+            });
+            
+            sendTokenJsonBtn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                const token = tokenInput.value.trim();
+                
+                if (!token) {
+                    addLog(tokenLogsDiv, 'Please enter a token value', 'error');
+                    return;
+                }
+                
+                addLog(tokenLogsDiv, `Sending token via JSON to ${ipAddress}/set_token...`);
+                
+                try {
+                    const response = await fetch(`http://${ipAddress}/set_token`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ token: token }),
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    addLog(tokenLogsDiv, `Response: type=${response.type}, status=${response.status}`, 'success');
+                    addLog(tokenLogsDiv, 'Token sent via JSON!', 'success');
+                } catch (error) {
+                    addLog(tokenLogsDiv, `Error: ${error.message}`, 'error');
+                }
+            });
+            
+            // Configure WiFi function
+            configureWifiBtn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                const ssid = wifiSSIDInput.value.trim();
+                const password = wifiPasswordInput.value;
+                
+                if (!ssid) {
+                    addLog(wifiLogsDiv, 'Please enter a Wi-Fi SSID', 'error');
+                    return;
+                }
+                
+                addLog(wifiLogsDiv, `Configuring ESP32 with Wi-Fi credentials: SSID=${ssid}...`);
+                
+                try {
+                    const response = await fetch(`http://${ipAddress}/set_wifi`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ ssid, password }),
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(10000)
+                    });
+                    
+                    addLog(wifiLogsDiv, `Response: type=${response.type}, status=${response.status}`, 'success');
+                    addLog(wifiLogsDiv, 'Wi-Fi credentials sent!', 'success');
+                    
+                    // Start polling for connection status
+                    let attempts = 0;
+                    const maxAttempts = 30;
+                    const pollIntervalId = setInterval(async () => {
+                        attempts++;
+                        
+                        if (attempts > maxAttempts) {
+                            clearInterval(pollIntervalId);
+                            addLog(wifiLogsDiv, 'Polling timed out after 30 attempts', 'error');
+                            return;
+                        }
+                        
+                        try {
+                            addLog(wifiLogsDiv, `Checking connection status (attempt ${attempts}/${maxAttempts})...`);
+                            
+                            const statusResponse = await fetch(`http://${ipAddress}/connection_status`, {
+                                method: 'GET',
+                                mode: 'no-cors',
+                                signal: AbortSignal.timeout(3000)
+                            });
+                            
+                            addLog(wifiLogsDiv, `Status response: type=${statusResponse.type}, status=${statusResponse.status}`);
+                            
+                            if (statusResponse.type === 'opaque') {
+                                // We can't read the actual content with no-cors, so just log that we got a response
+                                addLog(wifiLogsDiv, 'Received connection status response');
+                            }
+                        } catch (error) {
+                            addLog(wifiLogsDiv, `Status check error: ${error.message}`, 'error');
+                            
+                            // If we can't reach the ESP32 anymore, it might have connected to Wi-Fi
+                            if (attempts >= 5 && error.name === 'TimeoutError') {
+                                addLog(wifiLogsDiv, 'ESP32 might have connected to Wi-Fi and changed IP address', 'info');
+                            }
+                        }
+                    }, 2000);
+                } catch (error) {
+                    addLog(wifiLogsDiv, `Error: ${error.message}`, 'error');
+                }
+            });
+            
+            // Check status function
+            checkStatusBtn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                
+                addLog(statusLogsDiv, `Checking connection status at ${ipAddress}/connection_status...`);
+                
+                try {
+                    const response = await fetch(`http://${ipAddress}/connection_status`, {
+                        method: 'GET',
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    addLog(statusLogsDiv, `Response: type=${response.type}, status=${response.status}`, 'success');
+                    addLog(statusLogsDiv, 'Status check completed!', 'success');
+                } catch (error) {
+                    addLog(statusLogsDiv, `Error: ${error.message}`, 'error');
+                }
+            });
+            
+            // Check device info function
+            checkInfoBtn.addEventListener('click', async function() {
+                const ipAddress = esp32IpInput.value.trim();
+                
+                addLog(statusLogsDiv, `Getting device info from ${ipAddress}/info...`);
+                
+                try {
+                    const response = await fetch(`http://${ipAddress}/info`, {
+                        method: 'GET',
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    addLog(statusLogsDiv, `Response: type=${response.type}, status=${response.status}`, 'success');
+                    addLog(statusLogsDiv, 'Device info request completed!', 'success');
+                } catch (error) {
+                    addLog(statusLogsDiv, `Error: ${error.message}`, 'error');
+                }
+            });
+            
+            // Initial connection check
+            setTimeout(async () => {
+                try {
+                    const ipAddress = esp32IpInput.value.trim();
+                    const response = await fetch(`http://${ipAddress}`, {
+                        method: 'GET',
+                        mode: 'no-cors',
+                        signal: AbortSignal.timeout(3000)
+                    });
+                    
+                    if (response.type) {
+                        connectionStatusIndicator.className = 'status-indicator status-connected';
+                        connectionStatusText.textContent = 'Connected';
+                        addLog(connectionLogsDiv, 'Auto-detected ESP32 connection', 'success');
+                    }
+                } catch (error) {
+                    connectionStatusIndicator.className = 'status-indicator status-disconnected';
+                    connectionStatusText.textContent = 'Disconnected';
+                    addLog(connectionLogsDiv, 'No ESP32 connection detected');
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

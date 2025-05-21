@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Token Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0B9444;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #0B9444;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #056526;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>ESP32 Token Test Tool</h1>
+    
+    <div class="card">
+        <h2>1. Connection Check</h2>
+        <p>First, make sure you're connected to the ESP32_AP_Config WiFi network.</p>
+        <button onclick="checkConnection()">Check Connection</button>
+        <div id="connectionResult" class="result"></div>
+    </div>
+
+    <div class="card">
+        <h2>2. Send Token</h2>
+        <p>Enter the authentication token and send it to the ESP32 device:</p>
+        <label for="token">Authentication Token:</label>
+        <input type="text" id="token" placeholder="Enter your authentication token">
+        <button onclick="sendToken()">Send Token</button>
+        <div id="tokenResult" class="result"></div>
+    </div>
+
+    <div class="card">
+        <h2>3. Check ESP32 Status</h2>
+        <p>Check the current connection status of the ESP32:</p>
+        <button onclick="checkStatus()">Check Status</button>
+        <div id="statusResult" class="result"></div>
+    </div>
+
+    <div class="card">
+        <h2>4. Configure WiFi</h2>
+        <p>Configure the ESP32 to connect to your WiFi network:</p>
+        <label for="ssid">WiFi SSID:</label>
+        <input type="text" id="ssid" placeholder="Enter your WiFi network name">
+        <label for="password">WiFi Password:</label>
+        <input type="password" id="password" placeholder="Enter your WiFi password">
+        <button onclick="configureWiFi()">Configure WiFi</button>
+        <div id="wifiResult" class="result"></div>
+    </div>
+
+    <script>
+        // Default ESP32 address
+        const ESP32_IP = '192.168.4.1';
+
+        // Check connection to ESP32
+        async function checkConnection() {
+            const resultElement = document.getElementById('connectionResult');
+            resultElement.innerHTML = 'Checking connection...';
+            
+            try {
+                const response = await fetch(`http://${ESP32_IP}`, {
+                    method: 'GET',
+                    mode: 'no-cors',
+                    cache: 'no-cache'
+                });
+                
+                resultElement.innerHTML = `Connection successful! Response type: ${response.type}`;
+                resultElement.className = 'result success';
+            } catch (error) {
+                resultElement.innerHTML = `Connection failed: ${error.message}`;
+                resultElement.className = 'result error';
+            }
+        }
+
+        // Send token to ESP32
+        async function sendToken() {
+            const token = document.getElementById('token').value.trim();
+            const resultElement = document.getElementById('tokenResult');
+            
+            if (!token) {
+                resultElement.innerHTML = 'Please enter a token';
+                resultElement.className = 'result error';
+                return;
+            }
+            
+            resultElement.innerHTML = 'Sending token...';
+            
+            try {
+                // Create FormData with token
+                const formData = new FormData();
+                formData.append('token', token);
+                
+                // Send token via POST request
+                const response = await fetch(`http://${ESP32_IP}/set_token`, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'no-cors'
+                });
+                
+                resultElement.innerHTML = `Token sent successfully! Response type: ${response.type}`;
+                resultElement.className = 'result success';
+            } catch (error) {
+                resultElement.innerHTML = `Failed to send token: ${error.message}`;
+                resultElement.className = 'result error';
+            }
+        }
+
+        // Check ESP32 status
+        async function checkStatus() {
+            const resultElement = document.getElementById('statusResult');
+            resultElement.innerHTML = 'Checking status...';
+            
+            try {
+                // First try with regular mode
+                try {
+                    const response = await fetch(`http://${ESP32_IP}/connection_status`, {
+                        method: 'GET',
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const status = await response.json();
+                        resultElement.innerHTML = 'Status: ' + JSON.stringify(status, null, 2);
+                        resultElement.className = 'result success';
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Regular fetch failed, trying no-cors');
+                }
+                
+                // Fallback to no-cors mode
+                const response = await fetch(`http://${ESP32_IP}/connection_status`, {
+                    method: 'GET',
+                    mode: 'no-cors',
+                    cache: 'no-cache'
+                });
+                
+                resultElement.innerHTML = `Status endpoint reachable, but can't read response due to CORS. Response type: ${response.type}`;
+                resultElement.className = 'result success';
+            } catch (error) {
+                resultElement.innerHTML = `Failed to check status: ${error.message}`;
+                resultElement.className = 'result error';
+            }
+        }
+
+        // Configure WiFi
+        async function configureWiFi() {
+            const ssid = document.getElementById('ssid').value.trim();
+            const password = document.getElementById('password').value;
+            const resultElement = document.getElementById('wifiResult');
+            
+            if (!ssid) {
+                resultElement.innerHTML = 'Please enter a WiFi SSID';
+                resultElement.className = 'result error';
+                return;
+            }
+            
+            resultElement.innerHTML = 'Sending WiFi credentials...';
+            
+            try {
+                // Create config object
+                const config = { ssid, password };
+                
+                // Send config via POST request
+                const response = await fetch(`http://${ESP32_IP}/set_wifi`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config),
+                    mode: 'no-cors'
+                });
+                
+                resultElement.innerHTML = `WiFi credentials sent successfully! Response type: ${response.type}`;
+                resultElement.className = 'result success';
+                
+                // Start polling for connection status
+                startPolling();
+            } catch (error) {
+                resultElement.innerHTML = `Failed to send WiFi credentials: ${error.message}`;
+                resultElement.className = 'result error';
+            }
+        }
+
+        // Poll for ESP32 connection status
+        function startPolling() {
+            const statusElement = document.getElementById('statusResult');
+            statusElement.innerHTML = 'Polling for ESP32 connection status...';
+            
+            let attempts = 0;
+            const maxAttempts = 30;
+            
+            const pollInterval = setInterval(async () => {
+                attempts++;
+                statusElement.innerHTML = `Checking ESP32 status... Attempt ${attempts}/${maxAttempts}`;
+                
+                try {
+                    // Try with regular mode first
+                    try {
+                        const response = await fetch(`http://${ESP32_IP}/connection_status`, {
+                            method: 'GET',
+                            cache: 'no-cache'
+                        });
+                        
+                        if (response.ok) {
+                            const status = await response.json();
+                            statusElement.innerHTML = 'Status: ' + JSON.stringify(status, null, 2);
+                            
+                            if (status.connected && status.ip) {
+                                clearInterval(pollInterval);
+                                statusElement.innerHTML += '\n\nESP32 connected to WiFi with IP: ' + status.ip;
+                                statusElement.className = 'result success';
+                            }
+                        }
+                    } catch {
+                        // If regular fetch fails, try with no-cors
+                        await fetch(`http://${ESP32_IP}/connection_status`, {
+                            method: 'GET',
+                            mode: 'no-cors',
+                            cache: 'no-cache'
+                        });
+                        
+                        statusElement.innerHTML = `ESP32 AP is still responsive (attempt ${attempts}/${maxAttempts})`;
+                    }
+                } catch (error) {
+                    statusElement.innerHTML = `Poll attempt ${attempts}/${maxAttempts} failed: ${error.message}`;
+                }
+                
+                if (attempts >= maxAttempts) {
+                    clearInterval(pollInterval);
+                    statusElement.innerHTML += '\n\nPolling complete. If ESP32 is not showing as connected, you may need to check your ESP32 configuration.';
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

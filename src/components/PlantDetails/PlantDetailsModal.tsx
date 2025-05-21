@@ -21,6 +21,7 @@ import SensorDataChart from './SensorDataChart';
 import { usePlants } from '../../contexts/PlantContext';
 import { LoadingSpinner, ErrorMessage } from '../common';
 import { formatDateUTC7, formatDateTimeUTC7 } from '../../utils/dateUtils';
+import { esp32 } from '../../api';
 
 interface PlantDetailsModalProps {
   plant: Plant;
@@ -90,21 +91,30 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
   };
 
   // Function to refresh device connection status
-  const refreshDeviceStatus = () => {
+  const refreshDeviceStatus = async () => {
+    if (!localPlant.iotIntegration.deviceId) return;
+    
     setIsRefreshingDevice(true);
     
-    // Simulate checking device status (in a real app, this would be an API call)
-    setTimeout(() => {
+    try {
+      // Call the API to get device status
+      const deviceInfo = await esp32.getESP32DeviceStatus(localPlant.iotIntegration.deviceId);
+      
       setLocalPlant(prev => ({
         ...prev,
         iotIntegration: {
           ...prev.iotIntegration,
-          isConnected: Math.random() > 0.3, // Randomly simulate connection for demo
-          lastConnected: new Date().toISOString()
+          isConnected: deviceInfo.status.connected,
+          lastConnected: deviceInfo.status.lastConnected || prev.iotIntegration.lastConnected,
+          signalStrength: deviceInfo.status.signalStrength,
+          deviceIp: deviceInfo.status.ipAddress
         }
       }));
+    } catch (error) {
+      console.error('Failed to refresh device status:', error);
+    } finally {
       setIsRefreshingDevice(false);
-    }, 1500);
+    }
   };
   
   // Function to handle ESP32 pairing completion
@@ -745,9 +755,12 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                       
                       <div className="flex items-center">
                         <ESP32StatusIndicator
+                          deviceId={localPlant.iotIntegration.deviceId || ''}
                           isConnected={localPlant.iotIntegration.isConnected || false}
                           lastConnected={localPlant.iotIntegration.lastConnected}
+                          signalStrength={localPlant.iotIntegration.signalStrength}
                           showDetails={true}
+                          autoRefresh={true}
                         />
                         <button
                           onClick={refreshDeviceStatus}

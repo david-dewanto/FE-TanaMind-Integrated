@@ -191,7 +191,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
   };
   
   return (
-    <div className="fixed inset-0 z-10 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-10 bg-black bg-opacity-50 overflow-hidden">
       {showEsp32Modal && (
         <ESP32PairingModal
           onClose={() => setShowEsp32Modal(false)}
@@ -199,9 +199,15 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
         />
       )}
       
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between bg-[#F3FFF6] px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-[#0B9444]">
+      {/* Container with proper positioning */}
+      <div className="absolute inset-x-0 top-0 w-full h-full flex flex-col sm:p-4 sm:items-center sm:justify-center">
+        {/* Modal for all screen sizes */}
+        <div className="flex flex-col bg-white rounded-none sm:rounded-lg shadow-xl w-full h-full sm:h-auto sm:max-w-3xl sm:max-h-[calc(100vh-40px)] overflow-hidden">
+          {/* Top spacing div on mobile - increased height for more space */}
+          <div className="h-[80px] sm:hidden flex-shrink-0"></div>
+        {/* Fixed header - not sticky */}
+        <div className="flex-shrink-0 flex items-center justify-between bg-[#F3FFF6] px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#0B9444]">
             {step === 1 && 'Add New Plant - Basic Info'}
             {step === 2 && 'Add New Plant - Care Requirements'}
             {step === 3 && 'Add New Plant - Smart Features'}
@@ -215,7 +221,8 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
           </button>
         </div>
         
-        <div className="px-6 py-4 overflow-y-auto">
+        {/* Scrollable content area */}
+        <div className="flex-grow overflow-y-auto px-4 sm:px-6 py-4">
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
               {error}
@@ -696,7 +703,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
           </form>
         </div>
         
-        <div className="bg-gray-50 px-6 py-4 flex justify-between border-t border-gray-200">
+        <div className="flex-shrink-0 bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 flex justify-between border-t border-gray-200">
           {step > 1 ? (
             <button
               type="button"
@@ -733,6 +740,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
               {isLoading ? <LoadingSpinner size="small" /> : 'Add Plant'}
             </button>
           )}
+        </div>
         </div>
       </div>
     </div>

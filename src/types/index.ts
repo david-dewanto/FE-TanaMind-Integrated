@@ -29,6 +29,7 @@ export interface Plant {
     lastWatered: string;
     isConnected?: boolean;
     lastConnected?: string;
+    signalStrength?: number;
     healthStatus: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
   };
   tracking: {
