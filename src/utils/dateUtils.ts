@@ -91,3 +91,23 @@ export const calculateNextWateringDateUTC7 = (lastWateredAt: string, frequency: 
   
   return nextWateringDateUTC.toISOString();
 };
+
+/**
+ * Format relative time (e.g., "2 hours ago", "3 days ago")
+ */
+export const formatRelativeTime = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.round(diffMs / 1000);
+  const diffMin = Math.round(diffSec / 60);
+  const diffHour = Math.round(diffMin / 60);
+  const diffDay = Math.round(diffHour / 24);
+
+  if (diffSec < 60) return diffSec <= 1 ? 'just now' : `${diffSec} seconds ago`;
+  if (diffMin < 60) return diffMin === 1 ? '1 minute ago' : `${diffMin} minutes ago`;
+  if (diffHour < 24) return diffHour === 1 ? '1 hour ago' : `${diffHour} hours ago`;
+  if (diffDay < 7) return diffDay === 1 ? '1 day ago' : `${diffDay} days ago`;
+  
+  return formatDateUTC7(dateStr);
+};

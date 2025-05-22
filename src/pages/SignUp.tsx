@@ -37,6 +37,23 @@ const SignUp: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(() => {
+    const saved = sessionStorage.getItem('registrationSuccess');
+    return saved === 'true';
+  });
+  const [registeredEmail, setRegisteredEmail] = useState(() => {
+    return sessionStorage.getItem('registeredEmail') || '';
+  });
+  
+  // Debug effect to track state changes
+  React.useEffect(() => {
+    console.log('State update - registrationSuccess:', registrationSuccess, 'registeredEmail:', registeredEmail);
+  }, [registrationSuccess, registeredEmail]);
+
+  // Debug effect to track auth context changes
+  React.useEffect(() => {
+    console.log('Auth context update - isLoading:', authLoading, 'error:', authError);
+  }, [authLoading, authError]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -103,24 +120,41 @@ const SignUp: React.FC = () => {
     if (validateForm()) {
       try {
         setIsLoading(true);
+        console.log('Starting registration process...');
         
         // Use the AuthContext register function to create a new account
-        await register({
+        const result = await register({
           username: formData.name,
           email: formData.email,
           password: formData.password
         });
         
-        // If registration is successful, navigate to the login page
-        // The user may need to verify their email first depending on the backend setup
-        navigate('/signin', { 
-          state: { 
-            message: "Account created successfully! Please check your email to verify your account." 
-          } 
-        });
+        console.log('Registration result:', result);
+        console.log('Registration completed successfully, showing verification page');
+        
+        // If registration is successful, show verification success page
+        try {
+          console.log('Setting registration success state...');
+          
+          // Save to sessionStorage first to persist across re-renders
+          sessionStorage.setItem('registrationSuccess', 'true');
+          sessionStorage.setItem('registeredEmail', formData.email);
+          
+          // Then set component state
+          setRegistrationSuccess(true);
+          setRegisteredEmail(formData.email);
+          console.log('Registration success state set to true');
+          
+          // Force a small delay to ensure state is set
+          await new Promise(resolve => setTimeout(resolve, 100));
+          console.log('State setting delay completed');
+        } catch (stateError) {
+          console.error('Error setting registration success state:', stateError);
+        }
       } catch (error) {
         // Error is handled in AuthContext
-        console.error('Registration error:', error);
+        console.error('Registration error caught:', error);
+        console.log('AuthContext error state:', authError);
         
         // If AuthContext didn't set an error, set a general one
         if (!authError) {
@@ -130,32 +164,13 @@ const SignUp: React.FC = () => {
         }
       } finally {
         setIsLoading(false);
+        console.log('Registration loading state set to false');
       }
+    } else {
+      console.log('Form validation failed');
     }
   };
   
-  const passwordStrength = () => {
-    if (!formData.password) return { text: '', class: '' };
-    
-    const strength = {
-      weak: { text: 'Weak', class: 'text-red-500' },
-      medium: { text: 'Medium', class: 'text-yellow-500' },
-      strong: { text: 'Strong', class: 'text-green-500' },
-    };
-    
-    if (formData.password.length < 8) return strength.weak;
-    
-    const hasLower = /[a-z]/.test(formData.password);
-    const hasUpper = /[A-Z]/.test(formData.password);
-    const hasNumber = /\d/.test(formData.password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
-    
-    const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
-    
-    if (score <= 2) return strength.weak;
-    if (score === 3) return strength.medium;
-    return strength.strong;
-  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -177,7 +192,75 @@ const SignUp: React.FC = () => {
               </div>
             )}
             
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {(() => {
+              console.log('Render check - registrationSuccess:', registrationSuccess);
+              return registrationSuccess;
+            })() ? (
+              <div className="w-full max-w-lg mx-auto text-center">
+                {/* Success Icon */}
+                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+                
+                {/* Success Message */}
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h2>
+                <p className="text-gray-600 mb-8">
+                  Welcome to <span className="text-[#0B9444] font-semibold">TanaMind</span>
+                </p>
+                
+                {/* Email Verification */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    <h3 className="text-lg font-semibold text-gray-900">Verify Your Email</h3>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 mb-3">
+                    We sent a verification link to:
+                  </p>
+                  <p className="text-sm font-semibold text-blue-700 bg-white px-3 py-2 rounded border mb-4">
+                    {registeredEmail}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Please check your email and click the link to verify your account before signing in.
+                  </p>
+                </div>
+                
+                {/* Action Button */}
+                <button
+                  onClick={() => {
+                    sessionStorage.removeItem('registrationSuccess');
+                    sessionStorage.removeItem('registeredEmail');
+                    navigate('/signin');
+                  }}
+                  className="w-full bg-[#0B9444] hover:bg-[#056526] text-white font-medium py-3 px-4 rounded-lg transition-colors mb-4"
+                >
+                  Continue to Sign In
+                </button>
+                
+                {/* Help Text */}
+                <p className="text-xs text-gray-500">
+                  Didn't receive the email?{' '}
+                  <button 
+                    onClick={() => {
+                      sessionStorage.removeItem('registrationSuccess');
+                      sessionStorage.removeItem('registeredEmail');
+                      setRegistrationSuccess(false);
+                      setFormData({ name: '', email: registeredEmail, password: '', confirmPassword: '', agreeToTerms: false });
+                    }}
+                    className="text-[#0B9444] hover:text-[#056526] underline"
+                  >
+                    Try again
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <>
+                <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Full name
@@ -258,9 +341,9 @@ const SignUp: React.FC = () => {
                     )}
                   </button>
                 </div>
-                {formData.password && (
-                  <p className={`mt-1 text-sm ${passwordStrength().class}`}>
-                    Password strength: {passwordStrength().text}
+                {formData.password && formData.password.length < 8 && (
+                  <p className="mt-1 text-sm text-red-500">
+                    Password must be at least 8 characters
                   </p>
                 )}
                 {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
@@ -298,6 +381,11 @@ const SignUp: React.FC = () => {
                     )}
                   </button>
                 </div>
+                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-500">
+                    Passwords do not match
+                  </p>
+                )}
                 {errors.confirmPassword && <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>}
               </div>
               
@@ -337,15 +425,17 @@ const SignUp: React.FC = () => {
                     'Create account'
                   )}
                 </button>
-              </div>
-            </form>
-            
-            <p className="mt-8 text-center text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link to="/signin" className="font-medium text-[#0B9444] hover:text-[#056526]">
-                Sign in
-              </Link>
-            </p>
+                </div>
+                </form>
+                
+                <p className="mt-8 text-center text-sm text-gray-600">
+                  Already have an account?{' '}
+                  <Link to="/signin" className="font-medium text-[#0B9444] hover:text-[#056526]">
+                    Sign in
+                  </Link>
+                </p>
+              </>
+            )}
           </div>
         </div>
         

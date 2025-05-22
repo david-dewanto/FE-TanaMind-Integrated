@@ -28,6 +28,14 @@ TanaMind is a smart plant monitoring and watering system that helps users take c
   - Historical data in graphs
   - Plant health status indicators
 
+- **AI Analytics** ⭐ NEW
+  - AI-powered plant health analysis using Google Gemini
+  - Personalized care recommendations based on sensor data
+  - Interactive chat with AI plant assistant
+  - Historical trend analysis and insights
+  - Predictive care suggestions
+  - Offline capability for cached recommendations
+
 - **Knowledge Base**
   - Plant care articles and guides
   - Watering and fertilizing tips
@@ -52,6 +60,7 @@ TanaMind is a smart plant monitoring and watering system that helps users take c
 - **Build Tool**: Vite
 - **Deployment**: Netlify
 - **PWA Support**: vite-plugin-pwa & Workbox
+- **AI Integration**: Google Gemini API
 
 ## 📋 Prerequisites
 
@@ -73,14 +82,21 @@ npm install
 yarn install
 ```
 
-3. Start the development server
+3. Configure environment variables
+```bash
+cp .env.example .env
+# Edit .env and add your Google Gemini API key:
+# VITE_GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+4. Start the development server
 ```bash
 npm run dev
 # or
 yarn dev
 ```
 
-4. Build for production
+5. Build for production
 ```bash
 npm run build
 # or
@@ -115,6 +131,94 @@ For more information about PWA implementation, see:
 - [PWA-DOCUMENTATION.md](PWA-DOCUMENTATION.md) - Detailed documentation of PWA features
 - [PWA-TESTING-PLAN.md](PWA-TESTING-PLAN.md) - Testing guidelines for PWA functionality
 
+## 🤖 AI Analytics Setup
+
+The AI Analytics feature uses Google Gemini API through a secure server-side proxy to provide intelligent plant care recommendations and interactive chat functionality.
+
+### 🔒 Security-First Architecture
+
+The implementation uses a **secure proxy server** to protect the API key:
+- ✅ API key stored server-side only (Vercel environment variables)
+- ✅ No API key exposure in client code
+- ✅ CORS protection and request validation
+- ✅ Production-ready security
+
+### Configuration
+
+#### For Development
+
+**Option 1: Use Deployed Proxy (Recommended)**
+
+1. **Deploy to Vercel first** (see Production section below)
+
+2. **Configure local environment**:
+   ```bash
+   # Create .env file
+   echo "VITE_AI_PROXY_URL=https://your-app.vercel.app" > .env
+   ```
+
+3. **Run normal development server**:
+   ```bash
+   npm run dev
+   ```
+
+**Option 2: Local Vercel Development**
+
+1. **Get Gemini API Key**:
+   - Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - Generate a new API key
+
+2. **Set up local proxy**:
+   ```bash
+   # Create local .env file for Vercel functions
+   echo "GEMINI_API_KEY=your_gemini_api_key_here" > .env
+   vercel dev
+   ```
+
+#### For Production (Vercel)
+1. **Deploy to Vercel**:
+   ```bash
+   vercel
+   ```
+
+2. **Set Environment Variable**:
+   ```bash
+   vercel env add GEMINI_API_KEY
+   # Paste your Gemini API key when prompted
+   ```
+
+3. **Redeploy**:
+   ```bash
+   vercel --prod
+   ```
+
+### Features Available
+
+- **🧠 Plant Health Analysis**: AI analyzes sensor data and plant history to provide health assessments
+- **💡 Personalized Recommendations**: Get specific care advice based on your plant's conditions  
+- **💬 Interactive Chat**: Ask the AI assistant questions about plant care
+- **📱 Offline Support**: Previously generated recommendations are cached for offline viewing
+- **🔒 Secure**: API key never exposed to client-side code
+
+### Usage
+
+- Navigate to **Analytics** page to view AI-powered insights
+- Click **"Refresh Analysis"** to generate new recommendations
+- Use **"Chat with AI"** for interactive plant care assistance
+- Click **"Ask AI"** on individual plant cards for plant-specific chat
+
+### Technical Details
+
+The AI features work through a Vercel serverless function (`/api/ai-chat`) that:
+- Receives requests from the frontend
+- Validates and sanitizes input
+- Calls Gemini API with server-side credentials
+- Returns processed responses
+
+### Fallback Behavior
+
+Without the proxy server configured, the Analytics page will show a setup guide. All other app features work normally.
+
 ## 📁 Project Structure
 
 ```
@@ -125,13 +229,23 @@ For more information about PWA implementation, see:
 │   └── favicon.ico      # Favicon
 ├── src/
 │   ├── api/             # API client and service functions
+│   │   ├── ai.ts        # AI Analytics and Gemini API integration
+│   │   ├── auth.ts      # Authentication services
+│   │   ├── plants.ts    # Plant management services
+│   │   └── client.ts    # HTTP client configuration
 │   ├── components/      # UI components
 │   │   ├── common/      # Shared components (buttons, inputs, etc.)
+│   │   ├── Analytics/   # AI Analytics components
 │   │   ├── Dashboard/   # Dashboard-specific components
 │   │   └── PlantDetails/# Plant details components
 │   ├── contexts/        # React context providers
+│   │   ├── AIAnalyticsContext.tsx # AI Analytics state management
+│   │   ├── AuthContext.tsx        # Authentication state
+│   │   └── PlantContext.tsx       # Plant data state
 │   ├── data/            # Mock data and constants
 │   ├── pages/           # Page components
+│   │   ├── Analytics.tsx# AI Analytics dashboard
+│   │   └── Dashboard.tsx# Main dashboard
 │   ├── types/           # TypeScript type definitions
 │   ├── utils/           # Utility functions
 │   │   ├── offlineStorage.ts # Offline data management

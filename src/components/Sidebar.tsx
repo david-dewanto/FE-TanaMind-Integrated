@@ -37,17 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       {/* Hidden logo - removed to prevent duplicate logos */}
 
       <div className="p-5">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
           <h2 className="text-lg font-semibold text-[#056526]">Menu</h2>
-          {toggleSidebar && (
-            <button 
-              onClick={toggleSidebar} 
-              className="p-1 rounded-full hover:bg-red-100 text-red-600 focus:outline-none"
-              aria-label="Close sidebar"
-            >
-              <X size={20} />
-            </button>
-          )}
         </div>
         <nav className="space-y-1">
           {navItems.map((item) => (

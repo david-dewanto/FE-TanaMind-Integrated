@@ -20,28 +20,6 @@ const Register: React.FC = () => {
   const { register, isLoading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
-  const passwordStrength = () => {
-    if (!password) return { text: '', class: '' };
-    
-    const strength = {
-      weak: { text: 'Weak', class: 'text-red-500' },
-      medium: { text: 'Medium', class: 'text-yellow-500' },
-      strong: { text: 'Strong', class: 'text-green-500' },
-    };
-    
-    if (password.length < 8) return strength.weak;
-    
-    const hasLower = /[a-z]/.test(password);
-    const hasUpper = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
-    
-    if (score <= 2) return strength.weak;
-    if (score === 3) return strength.medium;
-    return strength.strong;
-  };
 
   const validateForm = (): boolean => {
     let isValid = true;
@@ -78,18 +56,6 @@ const Register: React.FC = () => {
     } else if (password.length < 8) {
       setPasswordError('Password must be at least 8 characters long');
       isValid = false;
-    } else {
-      // Additional password strength requirements
-      const hasLower = /[a-z]/.test(password);
-      const hasUpper = /[A-Z]/.test(password);
-      const hasNumber = /\d/.test(password);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-      
-      const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
-      if (score < 3) {
-        setPasswordError('Password is too weak. Include uppercase, lowercase, numbers, and special characters.');
-        isValid = false;
-      }
     }
     
     // Validate confirm password
@@ -158,26 +124,59 @@ const Register: React.FC = () => {
         )}
         
         {registrationSuccess ? (
-          <>
-            <ErrorMessage 
-              message={`Registration successful! We've sent a verification link to ${registeredEmail}. Please check your inbox and click the link to verify your account before logging in.`}
-              type="info"
-              className="mb-4"
-            />
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
             
-            <div className="mt-6 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Check Your Email</h2>
+            <p className="text-gray-600 mb-6">
+              We've sent a verification link to <strong>{registeredEmail}</strong>. 
+              Please check your inbox and click the link to verify your account before signing in.
+            </p>
+            
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-blue-700">
+                    <strong>Important:</strong> You must verify your email address before you can sign in to your account.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
               <button
                 onClick={() => navigate('/login')}
-                className="w-full bg-[#0B9444] hover:bg-[#056526] text-white font-medium py-2 rounded-md flex items-center justify-center transition-colors mb-4"
+                className="w-full bg-[#0B9444] hover:bg-[#056526] text-white font-medium py-3 px-4 rounded-lg transition-colors"
               >
-                Go to Login
+                Continue to Sign In
               </button>
               
-              <p className="text-gray-600">
-                Please check your email inbox and click the verification link to complete your registration.
+              <p className="text-sm text-gray-500">
+                Didn't receive the email? Check your spam folder or{' '}
+                <button 
+                  onClick={() => {
+                    setRegistrationSuccess(false);
+                    setEmail(registeredEmail);
+                    setUsername('');
+                    setPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="text-[#0B9444] hover:text-[#056526] font-medium"
+                >
+                  try again
+                </button>
               </p>
             </div>
-          </>
+          </div>
         ) : (
           <>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -249,9 +248,9 @@ const Register: React.FC = () => {
                     )}
                   </button>
                 </div>
-                {password && (
-                  <p className={`mt-1 text-sm ${passwordStrength().class}`}>
-                    Password strength: {passwordStrength().text}
+                {password && password.length < 8 && (
+                  <p className="mt-1 text-sm text-red-500">
+                    Password must be at least 8 characters
                   </p>
                 )}
                 {passwordError && <ErrorMessage message={passwordError} type="error" minimal className="mt-1" />}
@@ -285,6 +284,11 @@ const Register: React.FC = () => {
                     )}
                   </button>
                 </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="mt-1 text-sm text-red-500">
+                    Passwords do not match
+                  </p>
+                )}
                 {confirmPasswordError && <ErrorMessage message={confirmPasswordError} type="error" minimal className="mt-1" />}
               </div>
               

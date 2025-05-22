@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Menu, User, X, LogOut } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Menu, User, X, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationDropdown } from './Notifications';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -10,28 +11,18 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
-
-  const handleNotificationToggle = () => {
-    setIsNotificationOpen(!isNotificationOpen);
-    if (isUserMenuOpen) setIsUserMenuOpen(false);
-  };
+  const navigate = useNavigate();
 
   const handleUserMenuToggle = () => {
     setIsUserMenuOpen(!isUserMenuOpen);
-    if (isNotificationOpen) setIsNotificationOpen(false);
   };
 
-  // Close dropdowns when clicking outside
+  // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
-        setIsNotificationOpen(false);
-      }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
@@ -51,66 +42,50 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
     }
   };
 
+  const handlePlantClick = (plantId: number) => {
+    // Navigate to the plant or dashboard with plant details
+    navigate(`/dashboard/plants?plant=${plantId}`);
+  };
+
+  const handleViewAllNotifications = () => {
+    navigate('/dashboard/notifications');
+  };
+
   return (
-    <header className="bg-white shadow-sm fixed top-0 left-0 right-0 w-full z-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center">
+    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 w-full z-50">
+      <div className="max-w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Left side - Sidebar toggle and Logo */}
+        <div className="flex items-center min-w-0 flex-1">
           <button
             onClick={toggleSidebar}
-            className="text-gray-700 mr-4 focus:outline-none"
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0B9444] focus:ring-offset-2 transition-colors mr-3"
             aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
-            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <div className="flex items-center">
-            <Logo className="h-10" showText={true} linkTo="/landing" />
+          <div className="flex items-center min-w-0">
+            <Logo className="h-8 sm:h-10" showText={true} linkTo="/dashboard" textClassName="hidden sm:inline-block ml-2 text-[#0B9444] text-xl font-bold" />
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="relative" ref={notificationRef}>
-            <button
-              onClick={handleNotificationToggle}
-              className="p-2 rounded-full hover:bg-[#DFF3E2] text-[#056526] focus:outline-none"
-              aria-label="View notifications"
-            >
-              <Bell size={20} />
-              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
-            </button>
+        {/* Right side - Notifications and User menu */}
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <NotificationDropdown
+            onPlantClick={handlePlantClick}
+            onViewAll={handleViewAllNotifications}
+          />
 
-            {isNotificationOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-2 z-50">
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <h3 className="text-sm font-medium text-gray-700">Notifications</h3>
-                </div>
-                <div className="p-6 text-center">
-                  <div className="rounded-full bg-[#DFF3E2] p-4 inline-flex mb-3 mx-auto">
-                    <Bell size={24} className="text-[#0B9444]" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Coming Soon!</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Real-time plant notifications will be available in the next update.
-                  </p>
-                  <Link 
-                    to="/dashboard/notifications" 
-                    className="text-sm bg-[#0B9444] text-white px-4 py-2 rounded-lg hover:bg-[#056526] transition-colors inline-block"
-                  >
-                    Preview Features
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="w-px h-6 bg-gray-200"></div>
+          <div className="w-px h-6 bg-gray-300 hidden sm:block"></div>
 
           <div className="relative" ref={userMenuRef}>
             <button 
               onClick={handleUserMenuToggle}
-              className="flex items-center space-x-2 text-[#056526] hover:text-[#0B9444] focus:outline-none p-2 rounded-full hover:bg-[#DFF3E2]"
+              className="flex items-center space-x-2 text-[#056526] hover:text-[#0B9444] focus:outline-none focus:ring-2 focus:ring-[#0B9444] focus:ring-offset-2 p-2 rounded-lg hover:bg-[#DFF3E2] transition-colors"
             >
-              <User size={20} />
-              <span className="text-sm font-medium hidden sm:inline-block">
+              <div className="w-8 h-8 bg-[#0B9444] rounded-full flex items-center justify-center">
+                <User size={16} className="text-white" />
+              </div>
+              <span className="text-sm font-medium hidden sm:inline-block max-w-24 truncate">
                 {user?.username || 'User'}
               </span>
             </button>

@@ -14,28 +14,6 @@ const Login: React.FC = () => {
   const { login, isLoading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
-  const passwordStrength = () => {
-    if (!password) return { text: '', class: '' };
-    
-    const strength = {
-      weak: { text: 'Weak', class: 'text-red-500' },
-      medium: { text: 'Medium', class: 'text-yellow-500' },
-      strong: { text: 'Strong', class: 'text-green-500' },
-    };
-    
-    if (password.length < 8) return strength.weak;
-    
-    const hasLower = /[a-z]/.test(password);
-    const hasUpper = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
-    
-    if (score <= 2) return strength.weak;
-    if (score === 3) return strength.medium;
-    return strength.strong;
-  };
 
   const validateForm = (): boolean => {
     let isValid = true;
@@ -162,11 +140,6 @@ const Login: React.FC = () => {
                 )}
               </button>
             </div>
-            {password && (
-              <p className={`mt-1 text-sm ${passwordStrength().class}`}>
-                Password strength: {passwordStrength().text}
-              </p>
-            )}
             {passwordError && <ErrorMessage message={passwordError} type="error" minimal className="mt-1" />}
           </div>
           

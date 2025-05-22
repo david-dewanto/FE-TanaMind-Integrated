@@ -88,6 +88,18 @@ export const register = async (userData: RegisterRequest): Promise<RegisterRespo
   try {
     const response = await post<RegisterResponse>('/auth/register', userData, undefined, false);
     console.log('Registration successful, returning response', response);
+    
+    // If the response is empty or doesn't match expected format, still treat as success
+    // as long as the HTTP call succeeded (no exception thrown)
+    if (!response || Object.keys(response).length === 0) {
+      console.log('Empty response but HTTP call succeeded, treating as success');
+      return {
+        email: userData.email,
+        username: userData.username,
+        is_verified: false
+      };
+    }
+    
     return response;
   } catch (error) {
     console.error('Registration failed:', error);

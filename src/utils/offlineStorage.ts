@@ -17,6 +17,9 @@ export interface PendingOperation {
 // Local storage keys
 const OFFLINE_PLANTS_KEY = 'tanamind-offline-plants';
 const PENDING_OPERATIONS_KEY = 'tanamind-pending-operations';
+const OFFLINE_NOTIFICATIONS_KEY = 'tanamind-offline-notifications';
+const OFFLINE_AI_RECOMMENDATIONS_KEY = 'tanamind-offline-ai-recommendations';
+const OFFLINE_CHAT_HISTORY_KEY = 'tanamind-offline-chat-history';
 
 /**
  * Store plants data locally for offline access
@@ -158,12 +161,120 @@ export const removeOfflinePlant = (plantId: string): void => {
 };
 
 /**
+ * Store notifications data locally for offline access
+ */
+export const storeNotificationsOffline = (notifications: any[]) => {
+  try {
+    localStorage.setItem(OFFLINE_NOTIFICATIONS_KEY, JSON.stringify(notifications));
+    console.log('Notifications data stored offline successfully');
+  } catch (error) {
+    console.error('Failed to store notifications data offline:', error);
+  }
+};
+
+/**
+ * Get notifications data from local storage
+ */
+export const getOfflineNotifications = (): any[] => {
+  try {
+    const data = localStorage.getItem(OFFLINE_NOTIFICATIONS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Failed to retrieve notifications from offline storage:', error);
+    return [];
+  }
+};
+
+/**
+ * Update a notification in offline storage
+ */
+export const updateOfflineNotification = (notificationId: number, updatedData: any): void => {
+  try {
+    const notifications = getOfflineNotifications();
+    const updatedNotifications = notifications.map(notification => 
+      notification.id === notificationId ? { ...notification, ...updatedData } : notification
+    );
+    
+    storeNotificationsOffline(updatedNotifications);
+  } catch (error) {
+    console.error(`Failed to update notification ${notificationId} in offline storage:`, error);
+  }
+};
+
+/**
+ * Remove a notification from offline storage
+ */
+export const removeOfflineNotification = (notificationId: number): void => {
+  try {
+    const notifications = getOfflineNotifications();
+    const updatedNotifications = notifications.filter(notification => notification.id !== notificationId);
+    
+    storeNotificationsOffline(updatedNotifications);
+  } catch (error) {
+    console.error(`Failed to remove notification ${notificationId} from offline storage:`, error);
+  }
+};
+
+/**
+ * Store AI recommendations data locally for offline access
+ */
+export const storeAIRecommendationsOffline = (recommendations: Record<number, any>) => {
+  try {
+    localStorage.setItem(OFFLINE_AI_RECOMMENDATIONS_KEY, JSON.stringify(recommendations));
+    console.log('AI recommendations data stored offline successfully');
+  } catch (error) {
+    console.error('Failed to store AI recommendations data offline:', error);
+  }
+};
+
+/**
+ * Get AI recommendations data from local storage
+ */
+export const getOfflineAIRecommendations = (): Record<number, any> => {
+  try {
+    const data = localStorage.getItem(OFFLINE_AI_RECOMMENDATIONS_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch (error) {
+    console.error('Failed to retrieve AI recommendations from offline storage:', error);
+    return {};
+  }
+};
+
+/**
+ * Store chat history data locally for offline access
+ */
+export const storeChatHistoryOffline = (chatHistory: any[]) => {
+  try {
+    localStorage.setItem(OFFLINE_CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
+    console.log('Chat history data stored offline successfully');
+  } catch (error) {
+    console.error('Failed to store chat history data offline:', error);
+  }
+};
+
+/**
+ * Get chat history data from local storage
+ */
+export const getOfflineChatHistory = (): any[] => {
+  try {
+    const data = localStorage.getItem(OFFLINE_CHAT_HISTORY_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Failed to retrieve chat history from offline storage:', error);
+    return [];
+  }
+};
+
+/**
  * Clear all offline data (useful for logout)
  */
 export const clearOfflineStorage = (): void => {
   try {
     localStorage.removeItem(OFFLINE_PLANTS_KEY);
     localStorage.removeItem(PENDING_OPERATIONS_KEY);
+    localStorage.removeItem(OFFLINE_NOTIFICATIONS_KEY);
+    localStorage.removeItem(OFFLINE_AI_RECOMMENDATIONS_KEY);
+    localStorage.removeItem(OFFLINE_CHAT_HISTORY_KEY);
     console.log('Offline storage cleared');
   } catch (error) {
     console.error('Failed to clear offline storage:', error);

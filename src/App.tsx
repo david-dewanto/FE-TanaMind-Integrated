@@ -23,6 +23,8 @@ import AuthRedirect from './components/AuthRedirect';
 import { AuthProvider } from './contexts/AuthContext';
 import { PlantProvider } from './contexts/PlantContext';
 import { SensorProvider } from './contexts/SensorContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { AIAnalyticsProvider } from './contexts/AIAnalyticsContext';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 // Lazy load offline functionality components
@@ -130,7 +132,9 @@ const App: React.FC = () => {
               <PrivateRoute>
                 <PlantProvider>
                   <SensorProvider>
-                    <div className="min-h-screen bg-gray-100 flex flex-col">
+                    <NotificationProvider>
+                      <AIAnalyticsProvider>
+                        <div className="min-h-screen bg-gray-100 flex flex-col">
                       <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
                       
                       {/* Spacer for fixed header */}
@@ -159,8 +163,10 @@ const App: React.FC = () => {
                             <Route path="*" element={<Navigate to="/dashboard" replace />} />
                           </Routes>
                         </main>
-                      </div>
-                    </div>
+                        </div>
+                        </div>
+                      </AIAnalyticsProvider>
+                    </NotificationProvider>
                   </SensorProvider>
                 </PlantProvider>
               </PrivateRoute>

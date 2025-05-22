@@ -89,11 +89,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       clearError();
-      await auth.register(userData);
+      console.log('AuthContext: Starting registration with data:', userData);
+      
+      const result = await auth.register(userData);
+      console.log('AuthContext: Registration API call successful:', result);
+      
       // After successful registration, show success message to user
       // User needs to verify email before login
       // We'll return here and let the UI handle the notification
+      console.log('AuthContext: Registration completed successfully');
+      return result;
     } catch (err) {
+      console.error('AuthContext: Registration failed with error:', err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -102,6 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw err;
     } finally {
       setIsLoading(false);
+      console.log('AuthContext: Registration loading state cleared');
     }
   };
 

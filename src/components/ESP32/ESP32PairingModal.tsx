@@ -218,6 +218,23 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
         console.error("Query parameter method failed:", e);
       }
       
+      try {
+        // Method 4: JSON with no-cors (Arduino code supports this format)
+        console.log("Trying JSON format with no-cors...");
+        await fetch(`http://${ip}/set_token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token: authToken }),
+          mode: 'no-cors'
+        });
+        
+        console.log("JSON method completed");
+      } catch (e) {
+        console.error("JSON method failed:", e);
+      }
+      
       // If we made it this far without throwing, consider it a success
       return true;
     } catch (error) {
@@ -336,6 +353,15 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
         const deviceId = 'fern_device_001';
         setDeviceId(deviceId);
         
+        // IMPORTANT: Send token immediately after WiFi credentials, before WiFi connection attempt
+        console.log('Immediately sending token to ESP32 after WiFi credentials...');
+        const tokenSent = await sendAuthToken();
+        if (tokenSent) {
+          console.log('✅ Token successfully sent to ESP32 in AP mode');
+        } else {
+          console.warn('⚠️ Failed to send token to ESP32 in AP mode, will retry after WiFi connection');
+        }
+        
         // Start polling for WiFi connection
         pollForESP32WiFiConnection();
       } catch (fetchError) {
@@ -351,6 +377,15 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
           // Set device ID
           const deviceId = 'fern_device_001';
           setDeviceId(deviceId);
+          
+          // IMPORTANT: Send token immediately after WiFi credentials in the fallback path too
+          console.log('Fallback path: Immediately sending token to ESP32 after WiFi credentials...');
+          const tokenSent = await sendAuthToken();
+          if (tokenSent) {
+            console.log('✅ Fallback: Token successfully sent to ESP32 in AP mode');
+          } else {
+            console.warn('⚠️ Fallback: Failed to send token to ESP32 in AP mode, will retry after WiFi connection');
+          }
           
           // Start polling for WiFi connection
           pollForESP32WiFiConnection();

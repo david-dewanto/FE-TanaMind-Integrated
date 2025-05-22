@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/ai-chat.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "env": {
+    "GEMINI_API_KEY": "@gemini-api-key"
+  }
+}

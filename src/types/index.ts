@@ -60,5 +60,31 @@ export interface DashboardStats {
   connectedDevices?: number;
 }
 
+// Notification types
+export type NotificationType = 'missed_watering' | 'sensor_warning' | 'auto_watering';
+
+export interface Notification {
+  id: number;
+  user_id: number;
+  plant_id: number | null;
+  notification_type: NotificationType;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  plant_nickname?: string;
+}
+
+export interface NotificationFilters {
+  unread_only?: boolean;
+  type_filter?: NotificationType;
+  skip?: number;
+  limit?: number;
+}
+
+export interface NotificationUpdate {
+  is_read: boolean;
+}
+
 // Re-export ESP32 types for easier imports
 export * from './esp32';

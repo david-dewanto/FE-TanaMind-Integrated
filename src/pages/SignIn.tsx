@@ -109,28 +109,6 @@ const SignIn: React.FC = () => {
     }
   };
   
-  const passwordStrength = () => {
-    if (!formData.password) return { text: '', class: '' };
-    
-    const strength = {
-      weak: { text: 'Weak', class: 'text-red-500' },
-      medium: { text: 'Medium', class: 'text-yellow-500' },
-      strong: { text: 'Strong', class: 'text-green-500' },
-    };
-    
-    if (formData.password.length < 8) return strength.weak;
-    
-    const hasLower = /[a-z]/.test(formData.password);
-    const hasUpper = /[A-Z]/.test(formData.password);
-    const hasNumber = /\d/.test(formData.password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
-    
-    const score = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
-    
-    if (score <= 2) return strength.weak;
-    if (score === 3) return strength.medium;
-    return strength.strong;
-  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -214,11 +192,6 @@ const SignIn: React.FC = () => {
                     )}
                   </button>
                 </div>
-                {formData.password && (
-                  <p className={`mt-1 text-sm ${passwordStrength().class}`}>
-                    Password strength: {passwordStrength().text}
-                  </p>
-                )}
                 {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
               </div>
               
