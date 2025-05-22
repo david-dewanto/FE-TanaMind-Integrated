@@ -1,6 +1,6 @@
-const { GoogleGenAI } = require('@google/genai');
+import { GoogleGenAI } from '@google/genai';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Set CORS headers first
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -54,4 +54,4 @@ module.exports = async function handler(req, res) {
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-};
+}

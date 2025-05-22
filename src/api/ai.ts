@@ -81,17 +81,25 @@ class AIAnalyticsService {
   private async initializeAI() {
     // Test if the AI proxy endpoint is available
     try {
-      const response = await fetch(`${this.baseUrl}/api/ai-chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: 'test' })
+      console.log(`Testing AI proxy at: ${this.baseUrl}/api/ai-chat`);
+      
+      const response = await fetch(`${this.baseUrl}/api/test`, {
+        method: 'GET'
       });
       
-      if (response.status !== 400) { // 400 is expected for empty prompt
+      console.log(`Test endpoint response status: ${response.status}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Test endpoint response:', data);
         this.isInitialized = true;
+        console.log('AI service initialized successfully');
+      } else {
+        console.warn(`Test endpoint failed with status: ${response.status}`);
       }
     } catch (error) {
-      console.warn('AI proxy endpoint not available. AI features will be disabled.');
+      console.error('AI proxy endpoint not available:', error);
+      console.warn('AI features will be disabled.');
     }
   }
 
@@ -101,18 +109,24 @@ class AIAnalyticsService {
     }
 
     try {
+      console.log(`Making AI request to: ${this.baseUrl}/api/ai-chat`);
+      
       const response = await fetch(`${this.baseUrl}/api/ai-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
       });
 
+      console.log(`AI response status: ${response.status}`);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to get AI response');
+        const errorText = await response.text();
+        console.error('AI API error response:', errorText);
+        throw new Error(`AI API failed with status ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('AI response received successfully');
       return data.response;
     } catch (error) {
       console.error('AI API call failed:', error);
