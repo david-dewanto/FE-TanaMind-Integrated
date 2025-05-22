@@ -1,7 +1,6 @@
-import { GoogleGenAI } from '@google/genai';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+const { GoogleGenAI } = require('@google/genai');
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   // Set CORS headers first
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -55,4 +54,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-}
+};
