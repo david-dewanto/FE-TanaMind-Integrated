@@ -341,6 +341,174 @@ Format as JSON:
   isAvailable(): boolean {
     return this.isInitialized;
   }
+
+  async getPlantCareSuggestions(plantName: string, species?: string, category?: string): Promise<PlantCareSuggestions> {
+    if (!this.isInitialized) {
+      throw new Error('AI service not available. Please ensure the proxy server is configured.');
+    }
+
+    const prompt = `You are an expert botanist and plant care specialist. Analyze the following plant and provide comprehensive care recommendations:
+
+Plant Name: ${plantName}
+${species ? `Species: ${species}` : ''}
+${category ? `Category: ${category}` : ''}
+
+Please provide detailed care suggestions. If the plant name is unclear, misspelled, or ambiguous, make your best educated guess based on common houseplants and gardening plants. If you cannot identify the plant at all, provide general plant care recommendations suitable for most common houseplants.
+
+Format your response as JSON with the following structure:
+{
+  "plantIdentification": {
+    "commonName": "The most likely common name of the plant",
+    "scientificName": "Scientific/botanical name if identifiable",
+    "family": "Plant family if known",
+    "confidence": "high|medium|low",
+    "isValid": true/false,
+    "alternativeNames": ["other possible names"],
+    "notes": "Any clarification about the identification"
+  },
+  "careRequirements": {
+    "wateringFrequency": number (days between watering),
+    "wateringNotes": "Specific watering instructions",
+    "sunlightRequirements": "Low|Medium|High|Full Sun",
+    "sunlightNotes": "Detailed light requirements",
+    "idealTemperatureMin": number (Celsius),
+    "idealTemperatureMax": number (Celsius),
+    "temperatureNotes": "Temperature preferences",
+    "soilHumidityMin": number (percentage),
+    "soilHumidityMax": number (percentage),
+    "airHumidityMin": number (percentage),
+    "airHumidityMax": number (percentage),
+    "humidityNotes": "Humidity preferences",
+    "fertilizerSchedule": "Never|Monthly|Bimonthly|Quarterly|Biannually",
+    "fertilizerNotes": "Fertilizer recommendations",
+    "soilType": "Well-draining|Moisture-retentive|Sandy|Clay|Loamy",
+    "soilNotes": "Soil preferences"
+  },
+  "environmentalThresholds": {
+    "temperatureMin": number (critical minimum in Celsius),
+    "temperatureMax": number (critical maximum in Celsius),
+    "luminanceMin": number (minimum lux),
+    "luminanceMax": number (maximum lux),
+    "notes": "Critical thresholds to avoid plant stress"
+  },
+  "generalTips": [
+    "tip1",
+    "tip2",
+    "tip3"
+  ],
+  "commonIssues": [
+    "issue1",
+    "issue2"
+  ],
+  "defaultFallback": true/false (true if using generic defaults due to unclear plant name)
+}`;
+
+    try {
+      const responseText = await this.callAI(prompt);
+      
+      try {
+        const suggestions = JSON.parse(responseText.replace(/```json\s*|\s*```/g, ''));
+        return suggestions as PlantCareSuggestions;
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', parseError);
+        // Return default suggestions if parsing fails
+        return this.getDefaultPlantCareSuggestions(plantName);
+      }
+    } catch (error) {
+      console.error('Failed to get plant care suggestions:', error);
+      // Return default suggestions on error
+      return this.getDefaultPlantCareSuggestions(plantName);
+    }
+  }
+
+  private getDefaultPlantCareSuggestions(plantName: string): PlantCareSuggestions {
+    return {
+      plantIdentification: {
+        commonName: plantName || 'Unknown Plant',
+        scientificName: 'Unknown',
+        family: 'Unknown',
+        confidence: 'low',
+        isValid: false,
+        alternativeNames: [],
+        notes: 'Could not identify specific plant. Using general houseplant care guidelines.'
+      },
+      careRequirements: {
+        wateringFrequency: 7,
+        wateringNotes: 'Water when top inch of soil is dry. Adjust based on your plant\'s response.',
+        sunlightRequirements: 'Medium',
+        sunlightNotes: 'Most houseplants prefer bright, indirect light. Observe your plant for signs of too much or too little light.',
+        idealTemperatureMin: 18,
+        idealTemperatureMax: 24,
+        temperatureNotes: 'Average room temperature is suitable for most houseplants.',
+        soilHumidityMin: 40,
+        soilHumidityMax: 60,
+        airHumidityMin: 40,
+        airHumidityMax: 60,
+        humidityNotes: 'Most plants prefer moderate humidity. Mist occasionally if air is dry.',
+        fertilizerSchedule: 'Monthly',
+        fertilizerNotes: 'Feed during growing season (spring/summer) with diluted balanced fertilizer.',
+        soilType: 'Well-draining',
+        soilNotes: 'Use a general potting mix with good drainage.'
+      },
+      environmentalThresholds: {
+        temperatureMin: 10,
+        temperatureMax: 35,
+        luminanceMin: 1000,
+        luminanceMax: 10000,
+        notes: 'These are general safe ranges for most houseplants.'
+      },
+      generalTips: [
+        'Start with less water and increase gradually as you learn your plant\'s needs',
+        'Rotate the plant occasionally for even growth',
+        'Check for pests regularly and clean leaves to prevent dust buildup'
+      ],
+      commonIssues: [
+        'Yellow leaves often indicate overwatering or poor drainage',
+        'Brown leaf tips can mean low humidity or fluoride in tap water'
+      ],
+      defaultFallback: true
+    };
+  }
+}
+
+export interface PlantCareSuggestions {
+  plantIdentification: {
+    commonName: string;
+    scientificName: string;
+    family: string;
+    confidence: 'high' | 'medium' | 'low';
+    isValid: boolean;
+    alternativeNames: string[];
+    notes: string;
+  };
+  careRequirements: {
+    wateringFrequency: number;
+    wateringNotes: string;
+    sunlightRequirements: string;
+    sunlightNotes: string;
+    idealTemperatureMin: number;
+    idealTemperatureMax: number;
+    temperatureNotes: string;
+    soilHumidityMin: number;
+    soilHumidityMax: number;
+    airHumidityMin: number;
+    airHumidityMax: number;
+    humidityNotes: string;
+    fertilizerSchedule: string;
+    fertilizerNotes: string;
+    soilType: string;
+    soilNotes: string;
+  };
+  environmentalThresholds: {
+    temperatureMin: number;
+    temperatureMax: number;
+    luminanceMin: number;
+    luminanceMax: number;
+    notes: string;
+  };
+  generalTips: string[];
+  commonIssues: string[];
+  defaultFallback: boolean;
 }
 
 export const aiAnalytics = new AIAnalyticsService();

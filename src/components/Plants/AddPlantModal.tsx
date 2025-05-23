@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { X, Wifi, Leaf, Check } from 'lucide-react';
+import { X, Wifi, Leaf, Check, Sparkles, Info, AlertTriangle, Loader2 } from 'lucide-react';
 import { usePlants } from '../../contexts/PlantContext';
 import { PlantRequest } from '../../api/plants';
-import { LoadingSpinner } from '../common';
+import { LoadingSpinner, Tooltip } from '../common';
 import { ESP32PairingModal } from '../ESP32';
+import { aiAnalytics, PlantCareSuggestions } from '../../api/ai';
+import { useAIAnalytics } from '../../contexts/AIAnalyticsContext';
 
 interface AddPlantModalProps {
   onClose: () => void;
@@ -12,12 +14,19 @@ interface AddPlantModalProps {
 
 const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => {
   const { createPlant, isLoading, error, clearError } = usePlants();
+  const { state: aiState } = useAIAnalytics();
   const [step, setStep] = useState(1);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
   // IoT device states
   const [showEsp32Modal, setShowEsp32Modal] = useState(false);
   const [useIotDevice, setUseIotDevice] = useState(false);
+  
+  // AI Suggestion states
+  const [isLoadingAISuggestions, setIsLoadingAISuggestions] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<PlantCareSuggestions | null>(null);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [hasAppliedSuggestions, setHasAppliedSuggestions] = useState(false);
   
   // Form states
   const [formData, setFormData] = useState<PlantRequest>({
@@ -160,6 +169,76 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
     setShowEsp32Modal(false);
   };
   
+  // Function to get AI suggestions for plant care
+  const getAISuggestions = async () => {
+    if (!formData.plant_name.trim()) {
+      setFormErrors({ plant_name: 'Please enter a plant name first' });
+      return;
+    }
+    
+    if (!aiState.isAvailable) {
+      setFormErrors({ ai: 'AI service is not available at the moment' });
+      return;
+    }
+    
+    setIsLoadingAISuggestions(true);
+    
+    try {
+      const suggestions = await aiAnalytics.getPlantCareSuggestions(
+        formData.plant_name,
+        formData.species || formData.plant_name,
+        formData.category
+      );
+      
+      setAiSuggestions(suggestions);
+      setShowAISuggestions(true);
+      
+      // Show a message based on confidence
+      if (suggestions.plantIdentification.confidence === 'low' || suggestions.defaultFallback) {
+        setFormErrors({ ai: `AI couldn't identify "${formData.plant_name}" specifically. Showing general plant care suggestions.` });
+      }
+    } catch (error) {
+      console.error('Failed to get AI suggestions:', error);
+      setFormErrors({ ai: 'Failed to get AI suggestions. Please try again.' });
+    } finally {
+      setIsLoadingAISuggestions(false);
+    }
+  };
+  
+  // Function to apply AI suggestions to the form
+  const applyAISuggestions = () => {
+    if (!aiSuggestions) return;
+    
+    const { careRequirements, environmentalThresholds } = aiSuggestions;
+    
+    setFormData({
+      ...formData,
+      // Update species if AI found a better match
+      species: aiSuggestions.plantIdentification.scientificName !== 'Unknown' 
+        ? aiSuggestions.plantIdentification.scientificName 
+        : formData.species,
+      // Apply care requirements
+      watering_frequency: careRequirements.wateringFrequency,
+      sunlight_requirements: careRequirements.sunlightRequirements,
+      fertilizer_schedule: careRequirements.fertilizerSchedule,
+      ideal_temperature_min: careRequirements.idealTemperatureMin,
+      ideal_temperature_max: careRequirements.idealTemperatureMax,
+      // Apply thresholds
+      soil_humidity_threshold_min: careRequirements.soilHumidityMin,
+      soil_humidity_threshold_max: careRequirements.soilHumidityMax,
+      air_humidity_threshold_min: careRequirements.airHumidityMin,
+      air_humidity_threshold_max: careRequirements.airHumidityMax,
+      temperature_threshold_min: environmentalThresholds.temperatureMin,
+      temperature_threshold_max: environmentalThresholds.temperatureMax,
+      luminance_threshold_min: environmentalThresholds.luminanceMin,
+      luminance_threshold_max: environmentalThresholds.luminanceMax,
+    });
+    
+    setHasAppliedSuggestions(true);
+    setShowAISuggestions(false);
+    setFormErrors({}); // Clear any errors
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -199,6 +278,143 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
         />
       )}
       
+      {/* AI Suggestions Modal */}
+      {showAISuggestions && aiSuggestions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col">
+            <div className="flex justify-between items-center border-b border-gray-200 p-4 bg-gradient-to-r from-purple-50 to-indigo-50">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Sparkles className="text-purple-600" size={20} />
+                  AI Plant Care Suggestions
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {aiSuggestions.plantIdentification.confidence === 'high' 
+                    ? `Identified as: ${aiSuggestions.plantIdentification.commonName}`
+                    : aiSuggestions.defaultFallback
+                    ? 'General houseplant care recommendations'
+                    : `Best match: ${aiSuggestions.plantIdentification.commonName}`
+                  }
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowAISuggestions(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Plant Identification */}
+              <div className="bg-purple-50 rounded-lg p-4">
+                <h4 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
+                  <Info size={16} />
+                  Plant Identification
+                </h4>
+                <div className="space-y-1 text-sm">
+                  <p><span className="font-medium">Common Name:</span> {aiSuggestions.plantIdentification.commonName}</p>
+                  <p><span className="font-medium">Scientific Name:</span> {aiSuggestions.plantIdentification.scientificName}</p>
+                  <p><span className="font-medium">Family:</span> {aiSuggestions.plantIdentification.family}</p>
+                  <p><span className="font-medium">Confidence:</span> 
+                    <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
+                      aiSuggestions.plantIdentification.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                      aiSuggestions.plantIdentification.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {aiSuggestions.plantIdentification.confidence}
+                    </span>
+                  </p>
+                  {aiSuggestions.plantIdentification.notes && (
+                    <p className="text-gray-600 italic mt-2">{aiSuggestions.plantIdentification.notes}</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Care Requirements */}
+              <div className="bg-green-50 rounded-lg p-4">
+                <h4 className="font-medium text-green-900 mb-2">Recommended Care Settings</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="font-medium text-gray-700">Watering:</p>
+                    <p>Every {aiSuggestions.careRequirements.wateringFrequency} days</p>
+                    <p className="text-xs text-gray-600">{aiSuggestions.careRequirements.wateringNotes}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700">Sunlight:</p>
+                    <p>{aiSuggestions.careRequirements.sunlightRequirements}</p>
+                    <p className="text-xs text-gray-600">{aiSuggestions.careRequirements.sunlightNotes}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700">Temperature:</p>
+                    <p>{aiSuggestions.careRequirements.idealTemperatureMin}°C - {aiSuggestions.careRequirements.idealTemperatureMax}°C</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700">Humidity:</p>
+                    <p>Soil: {aiSuggestions.careRequirements.soilHumidityMin}%-{aiSuggestions.careRequirements.soilHumidityMax}%</p>
+                    <p>Air: {aiSuggestions.careRequirements.airHumidityMin}%-{aiSuggestions.careRequirements.airHumidityMax}%</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Tips and Common Issues */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Care Tips</h4>
+                  <ul className="text-sm space-y-1">
+                    {aiSuggestions.generalTips.map((tip, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <Check size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className="bg-amber-50 rounded-lg p-4">
+                  <h4 className="font-medium text-amber-900 mb-2">Common Issues</h4>
+                  <ul className="text-sm space-y-1">
+                    {aiSuggestions.commonIssues.map((issue, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <AlertTriangle size={14} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                        <span>{issue}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              
+              {/* Default Fallback Warning */}
+              {aiSuggestions.defaultFallback && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800">
+                    <AlertTriangle size={16} className="inline mr-2" />
+                    These are general plant care recommendations. The AI couldn't identify your specific plant, 
+                    but these settings work well for most common houseplants.
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t border-gray-200 p-4 flex justify-end gap-3">
+              <button
+                onClick={() => setShowAISuggestions(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={applyAISuggestions}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2"
+              >
+                <Check size={16} />
+                Apply Suggestions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Centered modal container with proper spacing */}
       <div className="relative m-auto w-full max-w-3xl px-4 py-6 sm:py-8">
         {/* Modal with rounded corners on all devices */}
@@ -234,6 +450,13 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
               </div>
             )}
             
+            {formErrors.ai && (
+              <div className="mb-4 p-3 bg-amber-100 text-amber-700 rounded-md flex items-start gap-2">
+                <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                <span className="text-sm">{formErrors.ai}</span>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit}>
               {/* Step 1: Basic Info */}
               {step === 1 && (
@@ -257,20 +480,92 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Plant Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="plant_name"
-                        value={formData.plant_name}
-                        onChange={handleInputChange}
-                        className={`w-full p-2 border rounded-md ${formErrors.plant_name ? 'border-red-500' : 'border-gray-300'}`}
-                        placeholder="e.g. Boston Fern"
-                      />
-                      {formErrors.plant_name && (
-                        <p className="mt-1 text-sm text-red-500">{formErrors.plant_name}</p>
-                      )}
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Plant Name <span className="text-red-500">*</span>
+                        </label>
+                        {aiState.isAvailable && (
+                          <Tooltip 
+                            content="Get AI-powered care suggestions based on your plant's species. Our AI will recommend optimal watering, lighting, and environmental conditions."
+                            position="left"
+                          >
+                            <span className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full cursor-help flex items-center gap-1">
+                              <Sparkles size={12} />
+                              AI Available
+                            </span>
+                          </Tooltip>
+                        )}
+                      </div>
+                      
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="plant_name"
+                          value={formData.plant_name}
+                          onChange={(e) => {
+                            handleInputChange(e);
+                            setHasAppliedSuggestions(false); // Reset when name changes
+                          }}
+                          className={`w-full p-2 border rounded-md pr-24 sm:pr-32 ${formErrors.plant_name ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                          placeholder="e.g. Boston Fern, Snake Plant, Monstera"
+                        />
+                        
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-1">
+                          <Tooltip 
+                            content={
+                              !aiState.isAvailable 
+                                ? 'AI service is currently unavailable. You can still add your plant manually.' 
+                                : !formData.plant_name.trim()
+                                ? 'Enter a plant name first, then click to get AI-powered care suggestions'
+                                : 'Get personalized care recommendations including watering schedule, lighting needs, and optimal growing conditions'
+                            }
+                            position="left"
+                          >
+                            <button
+                              type="button"
+                              onClick={getAISuggestions}
+                              disabled={isLoadingAISuggestions || !formData.plant_name.trim() || !aiState.isAvailable}
+                              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
+                                aiState.isAvailable && formData.plant_name.trim()
+                                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md transform hover:scale-105'
+                                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                              }`}
+                            >
+                              {isLoadingAISuggestions ? (
+                                <>
+                                  <Loader2 size={14} className="animate-spin" />
+                                  <span className="hidden sm:inline">Analyzing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles size={14} />
+                                  <span>AI Suggest</span>
+                                </>
+                              )}
+                            </button>
+                          </Tooltip>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-1 space-y-1">
+                        {formErrors.plant_name && (
+                          <p className="text-sm text-red-500">{formErrors.plant_name}</p>
+                        )}
+                        
+                        {hasAppliedSuggestions && (
+                          <p className="text-sm text-green-600 flex items-center gap-1">
+                            <Check size={14} />
+                            AI suggestions applied to care requirements
+                          </p>
+                        )}
+                        
+                        {!aiState.isAvailable && (
+                          <p className="text-xs text-gray-500 flex items-center gap-1">
+                            <Info size={12} />
+                            AI suggestions unavailable - you can still add your plant manually
+                          </p>
+                        )}
+                      </div>
                     </div>
                     
                     <div>
@@ -346,6 +641,14 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
               {/* Step 2: Care Requirements */}
               {step === 2 && (
                 <div className="space-y-4">
+                  {hasAppliedSuggestions && (
+                    <div className="bg-purple-50 border border-purple-200 p-3 rounded-lg flex items-center gap-2">
+                      <Sparkles className="text-purple-600" size={16} />
+                      <span className="text-sm text-purple-700">
+                        Care requirements have been enhanced with AI suggestions for {formData.plant_name}
+                      </span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

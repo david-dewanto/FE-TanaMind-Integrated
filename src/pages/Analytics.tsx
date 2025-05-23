@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Brain, MessageCircle, BarChart3, TrendingUp, AlertTriangle, CheckCircle, RefreshCw, Bot, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Brain, MessageCircle, BarChart3, TrendingUp, AlertTriangle, CheckCircle, RefreshCw, Bot, Sparkles, MoreVertical, Trash2, X, Leaf, MessageSquare, Droplets, AlertCircle, Send, Sun } from 'lucide-react';
 import { useAIAnalytics } from '../contexts/AIAnalyticsContext';
 import { usePlants } from '../contexts/PlantContext';
 import { AIRecommendation } from '../api/ai';
@@ -106,15 +106,60 @@ interface ChatInterfaceProps {
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose }) => {
-  const { state, sendChatMessage } = useAIAnalytics();
+  const { state, sendChatMessage, clearChatHistory } = useAIAnalytics();
   const { plants } = usePlants();
   const [message, setMessage] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [showClearSuccess, setShowClearSuccess] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const activePlant = activePlantId ? plants.find(p => p.id === activePlantId) : null;
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [state.chatHistory]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
+
+  // Handle escape key to close chat
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (showClearConfirm) {
+          setShowClearConfirm(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showClearConfirm, onClose]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!message.trim() || state.isChatting) return;
 
     await sendChatMessage({
       message: message.trim(),
@@ -125,87 +170,278 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose })
     setMessage('');
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
+  const handleClearChat = async () => {
+    setIsClearing(true);
+    // Add a small delay for visual feedback
+    await new Promise(resolve => setTimeout(resolve, 300));
+    clearChatHistory();
+    setShowClearConfirm(false);
+    setShowMenu(false);
+    setIsClearing(false);
+    
+    // Show success feedback
+    setShowClearSuccess(true);
+    setTimeout(() => setShowClearSuccess(false), 2000);
+  };
+
+  const openClearConfirm = () => {
+    setShowClearConfirm(true);
+    setShowMenu(false);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-lg border border-gray-200 h-96 flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <Bot size={20} className="text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-800">
-            TanaMind AI Assistant
-          </h3>
-          {activePlant && (
-            <span className="text-sm text-gray-600">
-              - {activePlant.nickname}
-            </span>
-          )}
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 h-[500px] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50 rounded-t-2xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
+            <Bot size={20} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              TanaMind AI Assistant
+              {state.isAvailable ? (
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              ) : (
+                <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+              )}
+            </h3>
+            {activePlant && (
+              <p className="text-sm text-gray-600 flex items-center gap-1">
+                <Leaf size={12} className="text-green-500" />
+                Chatting about {activePlant.nickname}
+              </p>
+            )}
+          </div>
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          ×
-        </button>
+        
+        <div className="flex items-center gap-2">
+          {/* Clear Chat Button - More Visible */}
+          {state.chatHistory.length > 0 && (
+            <button
+              onClick={openClearConfirm}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
+              aria-label="Clear chat history"
+            >
+              <Trash2 size={16} className="group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline">Clear</span>
+            </button>
+          )}
+          
+          {/* Close Button - Red */}
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
+            aria-label="Close chat"
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* AI Status Warning */}
+      {!state.isAvailable && (
+        <div className="bg-orange-50 border-b border-orange-200 px-4 py-2 flex items-center gap-2">
+          <AlertCircle size={16} className="text-orange-600" />
+          <span className="text-sm text-orange-700">AI service is temporarily unavailable</span>
+        </div>
+      )}
+
+      {/* Messages */}
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-5 space-y-4 scroll-smooth"
+        style={{
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 10px, black calc(100% - 10px), transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10px, black calc(100% - 10px), transparent 100%)'
+        }}
+      >
         {state.chatHistory.length === 0 ? (
-          <div className="text-center text-gray-500 mt-8">
-            <Bot size={48} className="mx-auto mb-4 text-gray-300" />
-            <p>Ask me anything about your plants!</p>
-            <p className="text-sm mt-2">I can help with care tips, troubleshooting, and analysis.</p>
+          <div className="flex flex-col items-center justify-center h-full text-center animate-fadeIn">
+            {showClearSuccess ? (
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                  <CheckCircle size={32} className="text-green-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">Chat Cleared!</h4>
+                <p className="text-gray-600">Ready to start a fresh conversation</p>
+              </div>
+            ) : (
+              <>
+                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center mb-4 group hover:scale-110 transition-transform cursor-pointer">
+                  <MessageSquare size={28} className="text-green-600 group-hover:rotate-12 transition-transform" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                  {activePlant ? `Let's talk about ${activePlant.nickname}` : 'Start a Conversation'}
+                </h4>
+                <p className="text-gray-600 mb-6 max-w-xs">
+                  Ask me anything about plant care, watering schedules, or get personalized advice!
+                </p>
+                
+                {/* Quick Prompts */}
+                <div className="w-full max-w-sm space-y-2">
+                  <p className="text-xs font-medium text-gray-500 mb-3">Quick questions:</p>
+                  <button
+                    onClick={() => setMessage(activePlant ? `How is ${activePlant.nickname} doing?` : "How do I care for my plants?")}
+                    className="w-full text-left px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-green-50 hover:to-green-100 rounded-lg text-sm text-gray-700 transition-all duration-200 group"
+                  >
+                    <Sparkles size={14} className="inline mr-2 text-yellow-500 group-hover:rotate-180 transition-transform" />
+                    {activePlant ? `How is ${activePlant.nickname} doing?` : "How do I care for my plants?"}
+                  </button>
+                  <button
+                    onClick={() => setMessage(activePlant ? `When should I water ${activePlant.nickname}?` : "What are signs of overwatering?")}
+                    className="w-full text-left px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 rounded-lg text-sm text-gray-700 transition-all duration-200 group"
+                  >
+                    <Droplets size={14} className="inline mr-2 text-blue-500 group-hover:scale-125 transition-transform" />
+                    {activePlant ? `When should I water ${activePlant.nickname}?` : "What are signs of overwatering?"}
+                  </button>
+                  <button
+                    onClick={() => setMessage(activePlant ? `Any care tips for ${activePlant.nickname}?` : "How much light do plants need?")}
+                    className="w-full text-left px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-yellow-50 hover:to-yellow-100 rounded-lg text-sm text-gray-700 transition-all duration-200 group"
+                  >
+                    <Sun size={14} className="inline mr-2 text-yellow-500 group-hover:animate-pulse" />
+                    {activePlant ? `Any care tips for ${activePlant.nickname}?` : "How much light do plants need?"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ) : (
-          state.chatHistory.map((chat) => (
-            <div
-              key={chat.id}
-              className={`flex ${chat.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          <>
+            {state.chatHistory.map((chat, index) => (
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  chat.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
+                key={chat.id}
+                className={`flex ${chat.role === 'user' ? 'justify-end' : 'justify-start'} animate-slideIn`}
               >
-                <p className="text-sm">{chat.content}</p>
-                <div className="text-xs opacity-70 mt-1">
-                  {new Date(chat.timestamp).toLocaleTimeString()}
+                <div className={`flex max-w-[80%] ${chat.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-2`}>
+                  {chat.role === 'assistant' && (
+                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-sm">
+                      <Bot size={16} className="text-white" />
+                    </div>
+                  )}
+                  <div
+                    className={`px-4 py-2.5 rounded-2xl ${
+                      chat.role === 'user'
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    <p className="text-sm leading-relaxed">{chat.content}</p>
+                    <div className={`text-xs mt-1 ${chat.role === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        )}
-        {state.isChatting && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg">
-              <div className="flex items-center gap-2">
-                <LoadingSpinner size="sm" />
-                <span className="text-sm">AI is thinking...</span>
+            ))}
+            
+            {state.isChatting && (
+              <div className="flex justify-start animate-slideIn">
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-sm">
+                    <Bot size={16} className="text-white" />
+                  </div>
+                  <div className="bg-gray-100 rounded-2xl px-4 py-2.5">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </>
         )}
       </div>
 
-      <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
-        <div className="flex gap-2">
+      {/* Input */}
+      <form onSubmit={handleSendMessage} className="px-5 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+        <div className="flex gap-3">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={activePlant ? `Ask about ${activePlant.nickname}...` : "Ask about your plants..."}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={state.isChatting}
+            onKeyPress={handleKeyPress}
+            placeholder={activePlant ? `Ask about ${activePlant.nickname}...` : "Type your message..."}
+            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            disabled={state.isChatting || !state.isAvailable}
           />
           <button
             type="submit"
-            disabled={!message.trim() || state.isChatting}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={!message.trim() || state.isChatting || !state.isAvailable}
+            className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl transition-all duration-200 disabled:cursor-not-allowed shadow-md flex items-center gap-2"
           >
-            Send
+            {state.isChatting ? (
+              <RefreshCw size={16} className="animate-spin" />
+            ) : (
+              <>
+                <Send size={16} />
+                <span className="hidden sm:inline">Send</span>
+              </>
+            )}
           </button>
         </div>
       </form>
+
+      {/* Clear Chat Confirmation Dialog */}
+      {showClearConfirm && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 rounded-2xl z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-slideIn">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Clear chat history?</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-3 mb-6">
+              <p className="text-sm text-gray-600">
+                You're about to delete <span className="font-medium text-gray-900">{state.chatHistory.length} message{state.chatHistory.length !== 1 ? 's' : ''}</span> from this conversation.
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                disabled={isClearing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearChat}
+                disabled={isClearing}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isClearing ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    Clearing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Clear chat
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -251,22 +487,58 @@ const Analytics: React.FC = () => {
           <p className="text-gray-600 mt-1">Advanced plant analysis powered by artificial intelligence</p>
         </div>
 
-        <div className="bg-gradient-to-b from-white to-[#F3FFF6] rounded-xl shadow-lg border border-[#DFF3E2] p-8 text-center max-w-4xl mx-auto">
-          <div className="flex justify-center mb-6">
-            <div className="h-20 w-20 bg-[#DFF3E2] rounded-full flex items-center justify-center">
-              <Brain size={40} className="text-[#0B9444]" />
-            </div>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 md:p-12 text-center max-w-4xl mx-auto relative overflow-hidden">
+          {/* Decorative background pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-[#0B9444] rounded-full -translate-x-16 -translate-y-16"></div>
+            <div className="absolute bottom-0 right-0 w-48 h-48 bg-[#0B9444] rounded-full translate-x-24 translate-y-24"></div>
           </div>
           
-          <h2 className="text-3xl font-bold text-[#056526] mb-4">AI Not Available</h2>
-          <p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
-            AI Analytics requires a valid Gemini API key. Please configure your API key in environment variables.
-          </p>
-          
-          <div className="bg-[#056526]/5 p-4 rounded-lg inline-block">
-            <p className="text-sm text-[#056526]">
-              Add VITE_GEMINI_API_KEY to your environment variables to enable AI features.
+          {/* Content */}
+          <div className="relative z-10">
+            {/* Icon with animated pulse effect */}
+            <div className="flex justify-center mb-8">
+              <div className="relative">
+                <div className="h-24 w-24 bg-gradient-to-br from-[#DFF3E2] to-[#E7F7EF] rounded-full flex items-center justify-center shadow-lg">
+                  <Brain size={48} className="text-[#0B9444]" />
+                </div>
+                <div className="absolute inset-0 h-24 w-24 bg-[#0B9444] rounded-full opacity-20 animate-ping"></div>
+              </div>
+            </div>
+            
+            <h2 className="text-3xl font-bold text-gray-800 mb-3">AI Service Temporarily Offline</h2>
+            <p className="text-lg text-gray-600 mb-4 max-w-2xl mx-auto leading-relaxed">
+              Our team is currently working to restore the AI Analytics service. Please try again periodically.
             </p>
+            <p className="text-sm text-gray-500 mb-8 max-w-xl mx-auto">
+              In the meantime, you can still monitor your plants and access all other features. We apologize for any inconvenience.
+            </p>
+            
+            
+            {/* Features preview */}
+            <div className="text-left max-w-md mx-auto">
+              <p className="text-xs text-gray-500 mb-3 text-center">When enabled, you'll get access to:</p>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle size={12} className="text-green-600" />
+                  </div>
+                  <span>Personalized plant health analysis</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle size={12} className="text-green-600" />
+                  </div>
+                  <span>AI-powered care recommendations</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle size={12} className="text-green-600" />
+                  </div>
+                  <span>Interactive chat assistant</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -274,27 +546,28 @@ const Analytics: React.FC = () => {
   }
 
   return (
+    <>
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#056526]">AI Analytics</h1>
-          <p className="text-gray-600 mt-1">Advanced plant analysis powered by artificial intelligence</p>
+          <h1 className="text-xl lg:text-2xl font-bold text-[#056526]">AI Analytics</h1>
+          <p className="text-sm lg:text-base text-gray-600 mt-1 hidden sm:block">Advanced plant analysis powered by artificial intelligence</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => handleOpenChat()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <MessageCircle size={16} />
-            Chat with AI
+            <span className="whitespace-nowrap">Chat</span>
           </button>
           <button
             onClick={handleRefreshAnalysis}
             disabled={state.isAnalyzing}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
           >
             <RefreshCw size={16} className={state.isAnalyzing ? 'animate-spin' : ''} />
-            {state.isAnalyzing ? 'Analyzing...' : 'Refresh Analysis'}
+            <span className="whitespace-nowrap">{state.isAnalyzing ? 'Analyzing' : 'Refresh'}</span>
           </button>
         </div>
       </div>
@@ -402,18 +675,26 @@ const Analytics: React.FC = () => {
         </>
       )}
 
-      {/* Chat Interface Modal */}
-      {showChat && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl">
-            <ChatInterface
-              activePlantId={state.activeChatPlant}
-              onClose={handleCloseChat}
-            />
-          </div>
-        </div>
-      )}
     </div>
+
+    {/* Chat Interface Modal - Outside main container for full screen coverage */}
+    {showChat && (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        onClick={handleCloseChat}
+      >
+        <div 
+          className="w-full max-w-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ChatInterface
+            activePlantId={state.activeChatPlant}
+            onClose={handleCloseChat}
+          />
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

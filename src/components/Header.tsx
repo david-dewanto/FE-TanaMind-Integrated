@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationDropdown } from './Notifications';
+import { ServerHealthBadge } from './common';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -68,8 +69,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
           </div>
         </div>
 
-        {/* Right side - Notifications and User menu */}
+        {/* Right side - AI Status, Notifications and User menu */}
         <div className="flex items-center space-x-2 sm:space-x-3">
+          <ServerHealthBadge 
+            onClick={() => navigate('/dashboard/analytics')}
+          />
+          
           <NotificationDropdown
             onPlantClick={handlePlantClick}
             onViewAll={handleViewAllNotifications}
