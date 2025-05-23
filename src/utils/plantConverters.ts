@@ -67,7 +67,6 @@ export const apiToUiPlant = (apiPlant: APIPLant): UIPlant => {
     },
     tracking: {
       nextWateringDate: apiPlant.next_watering_date || null,
-      lastFertilized: apiPlant.last_fertilized || null,
       reminderSettings: {
         enabled: apiPlant.reminder_enabled || false,
         frequency: 1, // Default reminder frequency

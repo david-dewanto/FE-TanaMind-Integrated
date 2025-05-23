@@ -26,6 +26,7 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
   const [location, setLocation] = useState('');
   const [wateringFrequency, setWateringFrequency] = useState(3);
   const [sunlightRequirements, setSunlightRequirements] = useState('Medium');
+  const [fertilizerSchedule, setFertilizerSchedule] = useState('Monthly');
   const [minTemp, setMinTemp] = useState(18);
   const [maxTemp, setMaxTemp] = useState(26);
   
@@ -68,6 +69,7 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
       setLocation(plant.location);
       setWateringFrequency(plant.wateringFrequency);
       setSunlightRequirements(plant.sunlightRequirements);
+      setFertilizerSchedule(plant.fertilizerSchedule);
       setMinTemp(plant.idealTemperatureRange.min);
       setMaxTemp(plant.idealTemperatureRange.max);
       
@@ -257,7 +259,7 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
         description,
         wateringFrequency,
         sunlightRequirements,
-        fertilizerSchedule: 'Monthly',
+        fertilizerSchedule,
         idealTemperatureRange: {
           min: minTemp,
           max: maxTemp,
@@ -280,7 +282,6 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
         },
         tracking: {
           nextWateringDate: plant?.tracking.nextWateringDate || new Date().toISOString(),
-          lastFertilized: plant?.tracking.lastFertilized || new Date().toISOString(),
           reminderSettings: {
             enabled: true,
             frequency: 1,
@@ -657,6 +658,25 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
                     <option value="Medium">Medium Light</option>
                     <option value="Bright">Bright Light</option>
                     <option value="Direct">Direct Sunlight</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="fertilizerSchedule" className="block text-sm font-medium text-gray-700 mb-1">
+                    Fertilizer Schedule
+                  </label>
+                  <select
+                    id="fertilizerSchedule"
+                    value={fertilizerSchedule}
+                    onChange={(e) => setFertilizerSchedule(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-2 focus:ring-[#39B54A] focus:border-transparent"
+                  >
+                    <option value="Never">Never</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Biweekly">Every 2 weeks</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Every 3 months</option>
+                    <option value="Biannually">Twice a year</option>
                   </select>
                 </div>
                 

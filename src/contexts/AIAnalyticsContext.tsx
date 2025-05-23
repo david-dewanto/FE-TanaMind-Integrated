@@ -119,7 +119,18 @@ export function AIAnalyticsProvider({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
+    // Check initial availability
     refreshAvailability();
+    
+    // Set up a listener for when AI service initializes
+    aiAnalytics.onInitialized(() => {
+      refreshAvailability();
+    });
+    
+    // Also wait for initialization promise
+    aiAnalytics.waitForInitialization().then(() => {
+      refreshAvailability();
+    });
   }, [refreshAvailability]);
 
   useEffect(() => {

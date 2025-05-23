@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Wifi, Leaf, Check, Sparkles, Info, AlertTriangle, Loader2 } from 'lucide-react';
 import { usePlants } from '../../contexts/PlantContext';
 import { PlantRequest } from '../../api/plants';
-import { LoadingSpinner, Tooltip } from '../common';
+import { LoadingSpinner, Tooltip, EnhancedTooltip } from '../common';
 import { ESP32PairingModal } from '../ESP32';
 import { aiAnalytics, PlantCareSuggestions } from '../../api/ai';
 import { useAIAnalytics } from '../../contexts/AIAnalyticsContext';
@@ -270,7 +270,10 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
   };
   
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 overflow-auto flex">
+    <div 
+      className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
+      onClick={onClose}
+    >
       {showEsp32Modal && (
         <ESP32PairingModal
           onClose={() => setShowEsp32Modal(false)}
@@ -280,8 +283,8 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
       
       {/* AI Suggestions Modal */}
       {showAISuggestions && aiSuggestions && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4" onClick={() => setShowAISuggestions(false)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center border-b border-gray-200 p-4 bg-gradient-to-r from-purple-50 to-indigo-50">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -416,28 +419,40 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
       )}
       
       {/* Centered modal container with proper spacing */}
-      <div className="relative m-auto w-full max-w-3xl px-4 py-6 sm:py-8">
-        {/* Modal with rounded corners on all devices */}
-        <div className="flex flex-col bg-white rounded-lg shadow-xl w-full max-h-[calc(100vh-3rem)] overflow-hidden">
+      <div className="relative m-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8" onClick={(e) => e.stopPropagation()}>
+        {/* Modal with rounded corners matching AI chat */}
+        <div className="flex flex-col bg-white rounded-2xl shadow-2xl w-full border border-gray-200 overflow-hidden">
           {/* Modal header */}
-          <div className="flex items-center justify-between bg-[#F3FFF6] px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-[#0B9444]">
-              {step === 1 && 'Add New Plant - Basic Info'}
-              {step === 2 && 'Add New Plant - Care Requirements'}
-              {step === 3 && 'Add New Plant - Smart Features'}
-            </h2>
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
+                <Leaf size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {step === 1 && 'Add New Plant - Basic Info'}
+                  {step === 2 && 'Add New Plant - Care Requirements'}
+                  {step === 3 && 'Add New Plant - Smart Features'}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {step === 1 && 'Tell us about your new plant'}
+                  {step === 2 && 'Set up care preferences'}
+                  {step === 3 && 'Configure smart monitoring'}
+                </p>
+              </div>
+            </div>
             
             <button 
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
               aria-label="Close"
             >
-              <X size={24} />
+              <X size={20} />
             </button>
           </div>
         
-          {/* Scrollable content area */}
-          <div className="flex-grow overflow-y-auto px-6 py-4">
+          {/* Content area */}
+          <div className="px-6 py-6 flex-1 overflow-y-auto">
             {error && (
               <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
                 {error}
@@ -460,10 +475,12 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
             <form onSubmit={handleSubmit}>
               {/* Step 1: Basic Info */}
               {step === 1 && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-6">
+                  {/* First Row - Nickname and Plant Name */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Nickname Field */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-gray-700">
                         Nickname <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -471,53 +488,64 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                         name="nickname"
                         value={formData.nickname}
                         onChange={handleInputChange}
-                        className={`w-full p-2 border rounded-md ${formErrors.nickname ? 'border-red-500' : 'border-gray-300'}`}
+                        className={`w-full px-4 py-3 border rounded-lg ${
+                          formErrors.nickname ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors`}
                         placeholder="e.g. Living Room Fern"
                       />
                       {formErrors.nickname && (
-                        <p className="mt-1 text-sm text-red-500">{formErrors.nickname}</p>
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertTriangle size={12} />
+                          {formErrors.nickname}
+                        </p>
                       )}
                     </div>
                     
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-sm font-medium text-gray-700">
+                    {/* Plant Name Field */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-gray-700">
                           Plant Name <span className="text-red-500">*</span>
                         </label>
                         {aiState.isAvailable && (
-                          <Tooltip 
-                            content="Get AI-powered care suggestions based on your plant's species. Our AI will recommend optimal watering, lighting, and environmental conditions."
-                            position="left"
+                          <Tooltip
+                            content="AI-powered plant care available"
+                            position="bottom"
                           >
-                            <span className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full cursor-help flex items-center gap-1">
-                              <Sparkles size={12} />
+                            <span className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full inline-flex items-center gap-1 border border-purple-200">
+                              <Sparkles size={12} className="animate-pulse" />
                               AI Available
                             </span>
                           </Tooltip>
                         )}
                       </div>
                       
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="plant_name"
-                          value={formData.plant_name}
-                          onChange={(e) => {
-                            handleInputChange(e);
-                            setHasAppliedSuggestions(false); // Reset when name changes
-                          }}
-                          className={`w-full p-2 border rounded-md pr-24 sm:pr-32 ${formErrors.plant_name ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
-                          placeholder="e.g. Boston Fern, Snake Plant, Monstera"
-                        />
+                      <div className="space-y-3">
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            name="plant_name"
+                            value={formData.plant_name}
+                            onChange={(e) => {
+                              handleInputChange(e);
+                              setHasAppliedSuggestions(false);
+                            }}
+                            className={`w-full px-4 py-3 border rounded-lg ${
+                              formErrors.plant_name ? 'border-red-500' : 'border-gray-300'
+                            } focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors`}
+                            placeholder="e.g. Boston Fern, Snake Plant, Monstera"
+                          />
+                        </div>
                         
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-1">
-                          <Tooltip 
+                        {/* AI Suggestion Button - Separate from input */}
+                        <div className="flex justify-end">
+                          <Tooltip
                             content={
                               !aiState.isAvailable 
-                                ? 'AI service is currently unavailable. You can still add your plant manually.' 
+                                ? 'AI service temporarily offline - manual entry still available'
                                 : !formData.plant_name.trim()
-                                ? 'Enter a plant name first, then click to get AI-powered care suggestions'
-                                : 'Get personalized care recommendations including watering schedule, lighting needs, and optimal growing conditions'
+                                ? 'Enter your plant name above to get AI-powered care suggestions'
+                                : 'Click to get personalized care recommendations from AI'
                             }
                             position="left"
                           >
@@ -525,21 +553,25 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                               type="button"
                               onClick={getAISuggestions}
                               disabled={isLoadingAISuggestions || !formData.plant_name.trim() || !aiState.isAvailable}
-                              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
+                              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm ${
                                 aiState.isAvailable && formData.plant_name.trim()
-                                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md transform hover:scale-105'
-                                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:scale-105'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                               }`}
                             >
                               {isLoadingAISuggestions ? (
                                 <>
-                                  <Loader2 size={14} className="animate-spin" />
-                                  <span className="hidden sm:inline">Analyzing...</span>
+                                  <div className="relative">
+                                    <Loader2 size={16} className="animate-spin" />
+                                  </div>
+                                  <span>Analyzing...</span>
                                 </>
                               ) : (
                                 <>
-                                  <Sparkles size={14} />
-                                  <span>AI Suggest</span>
+                                  <div className={`relative ${aiState.isAvailable && formData.plant_name.trim() ? 'text-yellow-300' : 'text-gray-400'}`}>
+                                    <Sparkles size={16} className={aiState.isAvailable && formData.plant_name.trim() ? 'animate-pulse' : ''} />
+                                  </div>
+                                  <span>Get AI Suggestions</span>
                                 </>
                               )}
                             </button>
@@ -547,29 +579,28 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                         </div>
                       </div>
                       
-                      <div className="mt-1 space-y-1">
-                        {formErrors.plant_name && (
-                          <p className="text-sm text-red-500">{formErrors.plant_name}</p>
-                        )}
-                        
-                        {hasAppliedSuggestions && (
-                          <p className="text-sm text-green-600 flex items-center gap-1">
-                            <Check size={14} />
-                            AI suggestions applied to care requirements
-                          </p>
-                        )}
-                        
-                        {!aiState.isAvailable && (
-                          <p className="text-xs text-gray-500 flex items-center gap-1">
-                            <Info size={12} />
-                            AI suggestions unavailable - you can still add your plant manually
-                          </p>
-                        )}
-                      </div>
+                      {formErrors.plant_name && (
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertTriangle size={12} />
+                          {formErrors.plant_name}
+                        </p>
+                      )}
+                      
+                      {hasAppliedSuggestions && (
+                        <p className="text-sm text-green-600 flex items-center gap-1">
+                          <Check size={14} />
+                          AI suggestions applied
+                        </p>
+                      )}
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                  </div>
+                  
+                  {/* Second Row - Species and Category */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Species Field */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-gray-700">
                         Species <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -577,23 +608,29 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                         name="species"
                         value={formData.species}
                         onChange={handleInputChange}
-                        className={`w-full p-2 border rounded-md ${formErrors.species ? 'border-red-500' : 'border-gray-300'}`}
+                        className={`w-full px-4 py-3 border rounded-lg ${
+                          formErrors.species ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors`}
                         placeholder="e.g. Nephrolepis exaltata"
                       />
                       {formErrors.species && (
-                        <p className="mt-1 text-sm text-red-500">{formErrors.species}</p>
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertTriangle size={12} />
+                          {formErrors.species}
+                        </p>
                       )}
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {/* Category Field */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-gray-700">
                         Category
                       </label>
                       <select
                         name="category"
                         value={formData.category}
                         onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 transition-colors appearance-none bg-white"
                       >
                         <option value="Indoor">Indoor</option>
                         <option value="Outdoor">Outdoor</option>
@@ -608,8 +645,9 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                     </div>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {/* Location Field */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
                       Location
                     </label>
                     <input
@@ -617,13 +655,14 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                       name="location"
                       value={formData.location}
                       onChange={handleInputChange}
-                      className="w-full p-2 border border-gray-300 rounded-md"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors"
                       placeholder="e.g. Living Room Window"
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {/* Description Field */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
                       Description
                     </label>
                     <textarea
@@ -631,9 +670,9 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                       value={formData.description}
                       onChange={handleInputChange}
                       rows={3}
-                      className="w-full p-2 border border-gray-300 rounded-md"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors resize-none"
                       placeholder="Add any notes or details about your plant..."
-                    ></textarea>
+                    />
                   </div>
                 </div>
               )}
@@ -1005,12 +1044,13 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
             </form>
           </div>
           
-          <div className="flex-shrink-0 bg-gray-50 px-6 py-4 flex justify-between border-t border-gray-200">
+          {/* Footer with navigation buttons */}
+          <div className="flex-shrink-0 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 flex justify-between items-center border-t border-gray-200">
             {step > 1 ? (
               <button
                 type="button"
                 onClick={handleBack}
-                className="px-4 py-2 text-[#0B9444] border border-[#0B9444] rounded-md hover:bg-[#F3FFF6]"
+                className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors shadow-sm"
               >
                 Back
               </button>
@@ -1018,7 +1058,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
+                className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors shadow-sm"
               >
                 Cancel
               </button>
@@ -1028,7 +1068,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
               <button
                 type="button"
                 onClick={handleNext}
-                className="px-4 py-2 bg-[#0B9444] text-white rounded-md hover:bg-[#056526]"
+                className="px-5 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 font-medium transition-all shadow-md hover:shadow-lg transform hover:scale-105"
               >
                 Next
               </button>
@@ -1037,7 +1077,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                 type="button"
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="px-4 py-2 bg-[#0B9444] text-white rounded-md hover:bg-[#056526] flex items-center justify-center min-w-[120px]"
+                className="px-5 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 font-medium transition-all shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center min-w-[120px]"
               >
                 {isLoading ? <LoadingSpinner size="small" /> : 'Add Plant'}
               </button>

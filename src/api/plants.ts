@@ -57,7 +57,6 @@ export interface Plant {
   last_watered: string;
   health_status: 'Good' | 'Warning' | 'Critical' | 'Unknown';
   next_watering_date: string;
-  last_fertilized: string;
   reminder_enabled: boolean;
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardStats from '../components/Dashboard/DashboardStats';
 import PlantList from '../components/Dashboard/PlantList';
 import PlantDetailsModal from '../components/PlantDetails/PlantDetailsModal';
@@ -24,6 +25,7 @@ const Dashboard: React.FC = () => {
   
   const { plants, isLoading: plantsLoading, error: plantsError, fetchPlants, fetchPlantsWithReadings } = usePlants();
   const { fetchPlantLogs } = useSensors();
+  const navigate = useNavigate();
   
   // Calculate dashboard stats
   useEffect(() => {
@@ -168,7 +170,7 @@ const Dashboard: React.FC = () => {
   const [isAddingPlant, setIsAddingPlant] = useState(false);
   
   const handleAddPlantClick = () => {
-    setIsAddingPlant(true);
+    navigate('/dashboard/plants');
   };
   
   const handleAddPlantCancel = () => {
@@ -177,19 +179,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+      <div className="mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#056526]">Dashboard</h1>
           <p className="text-gray-600 mt-1">Monitor and manage your plants</p>
         </div>
-        
-        <button 
-          onClick={handleAddPlantClick}
-          className="mt-4 sm:mt-0 flex items-center bg-[#0B9444] hover:bg-[#056526] text-white px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={18} className="mr-1" />
-          <span>Add New Plant</span>
-        </button>
       </div>
       
       {isLoading || plantsLoading ? (

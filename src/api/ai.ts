@@ -62,6 +62,8 @@ export interface ChatResponse {
 class AIAnalyticsService {
   private isInitialized = false;
   private baseUrl: string;
+  private initializationPromise: Promise<void> | null = null;
+  private initializationCallbacks: Array<() => void> = [];
 
   constructor() {
     // Check for AI proxy URL environment variable first
@@ -75,31 +77,76 @@ class AIAnalyticsService {
       this.baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
     }
     
-    this.initializeAI();
+    this.initializationPromise = this.initializeAI();
   }
 
-  private async initializeAI() {
-    // Test if the AI proxy endpoint is available
-    try {
-      console.log(`Testing AI proxy at: ${this.baseUrl}/api/ai-chat`);
-      
-      const response = await fetch(`${this.baseUrl}/api/test`, {
-        method: 'GET'
-      });
-      
-      console.log(`Test endpoint response status: ${response.status}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Test endpoint response:', data);
-        this.isInitialized = true;
-        console.log('AI service initialized successfully');
-      } else {
-        console.warn(`Test endpoint failed with status: ${response.status}`);
+  private async initializeAI(): Promise<void> {
+    // Test if the AI proxy endpoint is available with retries
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Testing AI proxy at: ${this.baseUrl}/api/test (attempt ${attempt}/${maxRetries})`);
+        
+        const response = await fetch(`${this.baseUrl}/api/test`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log(`Test endpoint response status: ${response.status}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Test endpoint response:', data);
+          this.isInitialized = true;
+          console.log('AI service initialized successfully');
+          
+          // Notify all waiting callbacks
+          this.initializationCallbacks.forEach(callback => callback());
+          this.initializationCallbacks = [];
+          return; // Success, exit the retry loop
+        } else {
+          console.warn(`Test endpoint failed with status: ${response.status}`);
+          if (attempt < maxRetries) {
+            console.log(`Retrying in ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          }
+        }
+      } catch (error) {
+        console.error(`AI proxy endpoint test failed (attempt ${attempt}/${maxRetries}):`, error);
+        if (attempt < maxRetries) {
+          console.log(`Retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        } else {
+          console.warn('AI features will be disabled after all retry attempts failed.');
+        }
       }
-    } catch (error) {
-      console.error('AI proxy endpoint not available:', error);
-      console.warn('AI features will be disabled.');
+    }
+  }
+
+  async waitForInitialization(): Promise<void> {
+    if (this.initializationPromise) {
+      await this.initializationPromise;
+    }
+  }
+
+  onInitialized(callback: () => void): void {
+    if (this.isInitialized) {
+      callback();
+    } else {
+      this.initializationCallbacks.push(callback);
+    }
+  }
+
+  async retryInitialization(): Promise<void> {
+    if (!this.isInitialized) {
+      console.log('Retrying AI service initialization...');
+      this.initializationPromise = this.initializeAI();
+      await this.initializationPromise;
     }
   }
 

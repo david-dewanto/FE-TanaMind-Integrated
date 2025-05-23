@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Brain, MessageCircle, BarChart3, TrendingUp, AlertTriangle, CheckCircle, RefreshCw, Bot, Sparkles, MoreVertical, Trash2, X, Leaf, MessageSquare, Droplets, AlertCircle, Send, Sun } from 'lucide-react';
 import { useAIAnalytics } from '../contexts/AIAnalyticsContext';
 import { usePlants } from '../contexts/PlantContext';
-import { AIRecommendation } from '../api/ai';
+import { AIRecommendation, aiAnalytics } from '../api/ai';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 
@@ -197,7 +197,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose })
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 h-[500px] flex flex-col">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 h-[600px] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50 rounded-t-2xl">
         <div className="flex items-center gap-3">
@@ -257,14 +257,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose })
       {/* Messages */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-5 space-y-4 scroll-smooth"
-        style={{
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 10px, black calc(100% - 10px), transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10px, black calc(100% - 10px), transparent 100%)'
-        }}
+        className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scroll-smooth"
       >
         {state.chatHistory.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center animate-fadeIn">
+          <div className="flex flex-col items-center justify-center min-h-full text-center animate-fadeIn py-8">
             {showClearSuccess ? (
               <div className="flex flex-col items-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-bounce">
@@ -274,14 +270,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose })
                 <p className="text-gray-600">Ready to start a fresh conversation</p>
               </div>
             ) : (
-              <>
-                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center mb-4 group hover:scale-110 transition-transform cursor-pointer">
+              <div className="w-full max-w-md mx-auto flex flex-col items-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center mb-4 group hover:scale-110 transition-transform cursor-pointer mx-auto">
                   <MessageSquare size={28} className="text-green-600 group-hover:rotate-12 transition-transform" />
                 </div>
                 <h4 className="text-lg font-semibold text-gray-800 mb-2">
                   {activePlant ? `Let's talk about ${activePlant.nickname}` : 'Start a Conversation'}
                 </h4>
-                <p className="text-gray-600 mb-6 max-w-xs">
+                <p className="text-gray-600 mb-6 max-w-xs mx-auto">
                   Ask me anything about plant care, watering schedules, or get personalized advice!
                 </p>
                 
@@ -310,7 +306,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose })
                     {activePlant ? `Any care tips for ${activePlant.nickname}?` : "How much light do plants need?"}
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         ) : (
@@ -447,9 +443,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose })
 };
 
 const Analytics: React.FC = () => {
-  const { state, analyzeAllPlants, setActiveChatPlant, clearError } = useAIAnalytics();
+  const { state, analyzeAllPlants, setActiveChatPlant, clearError, refreshAvailability } = useAIAnalytics();
   const { plants, plantsWithReadings } = usePlants();
   const [showChat, setShowChat] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     if (plants.length > 0 && state.isAvailable && Object.keys(state.recommendations).length === 0) {
@@ -514,6 +511,32 @@ const Analytics: React.FC = () => {
               In the meantime, you can still monitor your plants and access all other features. We apologize for any inconvenience.
             </p>
             
+            {/* Retry button */}
+            <button
+              onClick={async () => {
+                setIsRetrying(true);
+                try {
+                  await aiAnalytics.retryInitialization();
+                  refreshAvailability();
+                } finally {
+                  setIsRetrying(false);
+                }
+              }}
+              disabled={isRetrying}
+              className="mb-8 px-6 py-3 bg-[#0B9444] hover:bg-[#056526] disabled:bg-gray-400 text-white rounded-lg transition-colors font-medium flex items-center gap-2 mx-auto"
+            >
+              {isRetrying ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" />
+                  Retrying...
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={18} />
+                  Retry Connection
+                </>
+              )}
+            </button>
             
             {/* Features preview */}
             <div className="text-left max-w-md mx-auto">

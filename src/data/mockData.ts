@@ -32,7 +32,6 @@ export const mockPlants: Plant[] = [
     },
     tracking: {
       nextWateringDate: '2024-08-18T08:30:00',
-      lastFertilized: '2024-07-20T10:15:00',
       reminderSettings: {
         enabled: true,
         frequency: 3,
@@ -71,7 +70,6 @@ export const mockPlants: Plant[] = [
     },
     tracking: {
       nextWateringDate: '2024-08-20T17:45:00',
-      lastFertilized: '2024-06-15T14:30:00',
       reminderSettings: {
         enabled: true,
         frequency: 10,
@@ -110,7 +108,6 @@ export const mockPlants: Plant[] = [
     },
     tracking: {
       nextWateringDate: '2024-08-20T09:15:00',
-      lastFertilized: '2024-07-30T11:20:00',
       reminderSettings: {
         enabled: true,
         frequency: 7,
@@ -149,7 +146,6 @@ export const mockPlants: Plant[] = [
     },
     tracking: {
       nextWateringDate: '2024-08-19T16:30:00',
-      lastFertilized: '2024-07-12T13:45:00',
       reminderSettings: {
         enabled: true,
         frequency: 5,

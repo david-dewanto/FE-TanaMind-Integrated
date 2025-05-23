@@ -34,7 +34,6 @@ export interface Plant {
   };
   tracking: {
     nextWateringDate: string;
-    lastFertilized: string;
     reminderSettings: {
       enabled: boolean;
       frequency: number;

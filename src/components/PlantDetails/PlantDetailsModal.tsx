@@ -286,13 +286,6 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                       </div>
                       <span className="text-sm font-medium">{formatDateTimeUTC7(localPlant.tracking.nextWateringDate)}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Calendar size={20} className="text-amber-500 mr-2" />
-                        <span className="text-sm">Last Fertilized</span>
-                      </div>
-                      <span className="text-sm font-medium">{formatDateTimeUTC7(localPlant.tracking.lastFertilized)}</span>
-                    </div>
                   </div>
                   
                   <div className="mt-4 text-right">
