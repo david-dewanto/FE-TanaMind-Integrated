@@ -1,6 +1,6 @@
 import React from 'react';
 import { SensorData } from '../../types';
-import { ErrorMessage } from '../common';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface SensorDataChartProps {
   data: SensorData[];
@@ -24,61 +24,84 @@ const SensorDataChart: React.FC<SensorDataChartProps> = ({
 }) => {
   if (!data || data.length === 0) {
     return (
-      <ErrorMessage
-        message="No sensor data available"
-        type="info"
-        className="h-40 flex items-center justify-center"
-      />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></div>
+          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+        </div>
+        <div className="flex items-center justify-center h-32 text-gray-500">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+              <TrendingUp size={24} className="text-gray-400" />
+            </div>
+            <p className="text-sm">No sensor data available</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
   const formattedData = [...data].sort((a, b) => 
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  ).slice(0, 24);
+  ).slice(0, 12); // Show last 12 readings for cleaner visualization
   
-  // Get min, max values with safeguards for missing data
   const validValues = formattedData
     .map(item => Number(item[dataKey]))
     .filter(value => !isNaN(value) && value !== null && value !== undefined);
   
-  // Ensure we have a good range for the y-axis, even with only one reading
-  let maxValue, minValue;
+  if (validValues.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></div>
+          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+        </div>
+        <div className="flex items-center justify-center h-32 text-gray-500">
+          <p className="text-sm">Invalid sensor data</p>
+        </div>
+      </div>
+    );
+  }
+
+  const latestValue = Number(formattedData[0][dataKey]);
+  const previousValue = formattedData.length > 1 ? Number(formattedData[1][dataKey]) : latestValue;
   
-  if (validValues.length > 0) {
-    // Get actual min/max from data
-    const dataMax = Math.max(...validValues);
-    const dataMin = Math.min(...validValues);
-    
-    // If min and max are the same (e.g., only one reading), create artificial range
-    if (dataMax === dataMin) {
-      // Use thresholds to determine a reasonable range
-      // Make the single value appear somewhere in the middle
-      const buffer = Math.max((thresholds.max - thresholds.min) / 2, 10);
-      maxValue = Math.max(dataMax + buffer, thresholds.max);
-      minValue = Math.min(dataMin - buffer, thresholds.min);
-    } else {
-      // Add a small buffer (10%) to max and min for better visualization
-      const range = dataMax - dataMin;
-      maxValue = Math.max(dataMax + range * 0.1, thresholds.max);
-      minValue = Math.min(dataMin - range * 0.1, thresholds.min);
+  // Calculate trend
+  const trend = latestValue > previousValue ? 'up' : 
+                latestValue < previousValue ? 'down' : 'stable';
+  const trendValue = Math.abs(latestValue - previousValue);
+
+  const isInOptimalRange = (value: number) => {
+    return value >= thresholds.min && value <= thresholds.max;
+  };
+
+  const getTrendIcon = () => {
+    switch (trend) {
+      case 'up': return <TrendingUp size={16} className="text-emerald-600" />;
+      case 'down': return <TrendingDown size={16} className="text-red-500" />;
+      default: return <Minus size={16} className="text-gray-400" />;
     }
-  } else {
-    // No valid values, use thresholds
-    maxValue = thresholds.max;
-    minValue = thresholds.min;
-  }
-  
-  // Add a minimum range if max and min are still too close
-  if (maxValue - minValue < 5) {
-    maxValue += 5;
-    minValue = Math.max(0, minValue - 5); // Ensure we don't go below 0 for values that can't be negative
-  }
-  
-  // Get the latest value with fallback
-  const latestValue = validValues.length > 0 
-    ? formattedData[0][dataKey] 
-    : 0;
-  
+  };
+
+  const getTrendText = () => {
+    if (trend === 'stable') return 'Stable';
+    return `${trend === 'up' ? '+' : '-'}${trendValue.toFixed(1)}${unit}`;
+  };
+
+  const getStatusColor = () => {
+    if (isInOptimalRange(latestValue)) {
+      return 'text-emerald-600 bg-emerald-50';
+    } else {
+      return 'text-amber-600 bg-amber-50';
+    }
+  };
+
+  // Create chart data for visualization
+  const chartData = formattedData.reverse(); // Oldest to newest for chart
+  const maxValue = Math.max(...validValues, thresholds.max);
+  const minValue = Math.min(...validValues, thresholds.min);
+  const range = maxValue - minValue || 1;
+
   const getTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('en-US', { 
       hour: '2-digit', 
@@ -87,178 +110,127 @@ const SensorDataChart: React.FC<SensorDataChartProps> = ({
     });
   };
 
-  const isInOptimalRange = (value: number) => {
-    return value >= thresholds.min && value <= thresholds.max;
-  };
-
-  const getStatusColor = () => {
-    if (isInOptimalRange(Number(latestValue))) {
-      return 'text-[#0B9444]';
-    } else {
-      return 'text-amber-500';
-    }
-  };
-  
-  const chartHeight = 120;
-  const chartWidth = '100%';
-  
-  // Get Y coordinate with safety checks for division by zero
-  const getY = (value: number) => {
-    const range = (maxValue - minValue) || 1; // Prevent division by zero
-    const normalizedValue = Math.max(Math.min(value, maxValue), minValue); // Clamp value
-    return chartHeight - ((normalizedValue - minValue) / range) * chartHeight;
-  };
-  
-  const getX = (index: number, total: number) => {
-    const width = typeof chartWidth === 'string' ? 
-      parseInt(chartWidth) || 300 : chartWidth;
-    return (index / (total - 1)) * width;
-  };
-  
-  // Generate points with safeguards
-  const points = formattedData.map((item, index) => {
-    const value = Number(item[dataKey]);
-    if (isNaN(value) || value === null || value === undefined) return null;
-    
-    const x = getX(index, formattedData.length);
-    const y = getY(value);
-    return `${x},${y}`;
-  }).filter(point => point !== null).join(' ');
-
   return (
-    <div className="h-full">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-medium text-gray-700">{title}</h3>
-        <div className={`text-sm font-semibold ${getStatusColor()} flex items-center gap-1`}>
-          <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: color }}></span>
-          <span>{latestValue} {unit}</span>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></div>
+          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+        </div>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor()}`}>
+          {isInOptimalRange(latestValue) ? '✓ Optimal' : '⚠ Attention'}
         </div>
       </div>
-      
-      <div className="relative" style={{ height: `${chartHeight}px` }}>
-        {/* Chart background grid lines for better readability */}
-        <div className="absolute inset-0 grid grid-cols-4 w-full h-full">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="border-r border-gray-100 h-full" />
-          ))}
-        </div>
-        <div className="absolute inset-0 grid grid-rows-4 w-full h-full">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="border-b border-gray-100 w-full" />
-          ))}
-        </div>
-        
-        {/* Add reference lines for better readability with few data points */}
-        <div className="absolute inset-0">
-          {/* Mid-range reference line */}
-          <div className="absolute w-full border-b border-dashed border-gray-200"
-               style={{ top: `${getY((maxValue + minValue) / 2)}px` }} />
-               
-          {/* Quarterway reference lines */}
-          <div className="absolute w-full border-b border-dotted border-gray-100"
-               style={{ top: `${getY(minValue + (maxValue - minValue) * 0.25)}px` }} />
-          <div className="absolute w-full border-b border-dotted border-gray-100"
-               style={{ top: `${getY(minValue + (maxValue - minValue) * 0.75)}px` }} />
-        </div>
-        
-        <svg width={chartWidth} height={chartHeight} className="overflow-visible relative z-10">
-          {/* Threshold lines with improved styling - adjusted to not overlap with text */}
-          <line 
-            x1="30" 
-            y1={getY(thresholds.min)} 
-            x2="85%" 
-            y2={getY(thresholds.min)} 
-            stroke="#CBD5E1" 
-            strokeWidth="1.5" 
-            strokeDasharray="4,4" 
-          />
-          <line 
-            x1="30" 
-            y1={getY(thresholds.max)} 
-            x2="85%" 
-            y2={getY(thresholds.max)} 
-            stroke="#CBD5E1" 
-            strokeWidth="1.5" 
-            strokeDasharray="4,4" 
-          />
 
-          {/* Only render polyline if we have multiple valid points */}
-          {points && formattedData.length > 1 && (
-            <polyline
-              fill="none"
-              stroke={color}
-              strokeWidth="2"
-              points={points}
-            />
-          )}
-          
-          {/* We've removed the special case for single reading line as requested */}
-          
-          {/* Dots for each data point with safeguards */}
-          {formattedData.map((item, index) => {
-            const value = Number(item[dataKey]);
-            if (isNaN(value) || value === null || value === undefined) return null;
-            
-            // Make the latest reading (index 0) more prominent
-            const isLatest = index === 0;
-            
-            return (
-              <circle
-                key={index}
-                cx={getX(index, formattedData.length)}
-                cy={getY(value)}
-                r={isLatest || formattedData.length === 1 ? "5" : "3"}
-                fill={isLatest ? color : "white"}
-                stroke={color}
-                strokeWidth={isLatest || formattedData.length === 1 ? "2" : "1.5"}
-              />
-            );
-          })}
-        </svg>
-        
-        {/* Min and max labels - positioned to the left to avoid overlap - with smaller font */}
-        <div className="absolute top-0 left-0 text-[9px] text-gray-400 px-1 bg-white/50 rounded">
-          {maxValue.toFixed(1)} {unit}
+      {/* Current Value and Trend */}
+      <div className="mb-6">
+        <div className="flex items-baseline gap-3 mb-2">
+          <span className="text-3xl font-bold text-gray-900">
+            {latestValue.toFixed(1)}
+          </span>
+          <span className="text-lg text-gray-600">{unit}</span>
+          <div className="flex items-center gap-1 ml-2">
+            {getTrendIcon()}
+            <span className="text-sm text-gray-600">{getTrendText()}</span>
+          </div>
         </div>
-        <div className="absolute bottom-0 left-0 text-[9px] text-gray-400 px-1 bg-white/50 rounded">
-          {minValue.toFixed(1)} {unit}
-        </div>
-        
-        {/* Reference value labels - only show when few data points or single reading */}
-        {formattedData.length <= 3 && (
-          <>
-            <div className="absolute text-[9px] text-gray-400 px-1 bg-white/50 rounded" 
-                 style={{ top: `${getY((maxValue + minValue) / 2)}px`, left: '0', transform: 'translateY(-50%)' }}>
-              {((maxValue + minValue) / 2).toFixed(1)} {unit}
-            </div>
-            <div className="absolute text-[9px] text-gray-400 px-1 bg-white/50 rounded" 
-                 style={{ top: `${getY(minValue + (maxValue - minValue) * 0.25)}px`, left: '0', transform: 'translateY(-50%)' }}>
-              {(minValue + (maxValue - minValue) * 0.25).toFixed(1)} {unit}
-            </div>
-            <div className="absolute text-[9px] text-gray-400 px-1 bg-white/50 rounded" 
-                 style={{ top: `${getY(minValue + (maxValue - minValue) * 0.75)}px`, left: '0', transform: 'translateY(-50%)' }}>
-              {(minValue + (maxValue - minValue) * 0.75).toFixed(1)} {unit}
-            </div>
-          </>
-        )}
-        
-        {/* Threshold labels - positioned to the right with better spacing and smaller font */}
-        <div className="absolute right-0 text-[9px] text-gray-500 px-1 bg-white/70 rounded shadow-sm" 
-          style={{ top: `${getY(thresholds.max)}px`, transform: 'translateY(-50%)' }}>
-          Max: {thresholds.max} {unit}
-        </div>
-        <div className="absolute right-0 text-[9px] text-gray-500 px-1 bg-white/70 rounded shadow-sm" 
-          style={{ top: `${getY(thresholds.min)}px`, transform: 'translateY(-50%)' }}>
-          Min: {thresholds.min} {unit}
+        <div className="text-sm text-gray-500">
+          Optimal range: {thresholds.min}-{thresholds.max}{unit}
         </div>
       </div>
-      
-      {formattedData.length >= 2 && (
-        <div className="flex justify-between mt-2 text-xs text-gray-500 border-t border-gray-100 pt-1">
-          <span className="font-medium">From: {getTime(formattedData[formattedData.length - 1].timestamp)}</span>
-          <span className="font-medium">To: {getTime(formattedData[0].timestamp)}</span>
+
+      {/* Chart Visualization */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <span>Last {chartData.length} readings</span>
+          <span>{new Date(formattedData[formattedData.length - 1].timestamp).toLocaleDateString()}</span>
         </div>
-      )}
+        
+        {/* Line Chart */}
+        <div className="relative h-24 bg-gray-50 rounded-lg p-4">
+          <svg width="100%" height="100%" className="overflow-visible">
+            {/* Grid lines */}
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f3f4f6" strokeWidth="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            
+            {/* Optimal range area */}
+            <rect
+              x="0"
+              y={`${(1 - (thresholds.max - minValue) / range) * 100}%`}
+              width="100%"
+              height={`${((thresholds.max - thresholds.min) / range) * 100}%`}
+              fill={color}
+              opacity="0.1"
+            />
+            
+            {/* Data line */}
+            {chartData.length > 1 && (
+              <polyline
+                fill="none"
+                stroke={color}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={chartData.map((item, index) => {
+                  const x = (index / (chartData.length - 1)) * 100;
+                  const y = (1 - (Number(item[dataKey]) - minValue) / range) * 100;
+                  return `${x}%,${y}%`;
+                }).join(' ')}
+              />
+            )}
+            
+            {/* Data points */}
+            {chartData.map((item, index) => {
+              const value = Number(item[dataKey]);
+              const x = (index / (chartData.length - 1)) * 100;
+              const y = (1 - (value - minValue) / range) * 100;
+              const isOptimal = isInOptimalRange(value);
+              const isLatest = index === chartData.length - 1;
+              
+              return (
+                <circle
+                  key={index}
+                  cx={`${x}%`}
+                  cy={`${y}%`}
+                  r={isLatest ? "4" : "3"}
+                  fill={isLatest ? color : isOptimal ? color : '#ef4444'}
+                  stroke="white"
+                  strokeWidth="2"
+                  className="drop-shadow-sm"
+                />
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Range indicators */}
+        <div className="flex justify-between items-center text-xs text-gray-400">
+          <span>{minValue.toFixed(1)}{unit}</span>
+          <div className="flex-1 mx-4 h-1 bg-gray-200 rounded-full relative">
+            <div 
+              className="absolute h-full bg-emerald-200 rounded-full"
+              style={{
+                left: `${((thresholds.min - minValue) / range) * 100}%`,
+                width: `${((thresholds.max - thresholds.min) / range) * 100}%`
+              }}
+            />
+          </div>
+          <span>{maxValue.toFixed(1)}{unit}</span>
+        </div>
+
+        {/* Time range */}
+        {chartData.length >= 2 && (
+          <div className="flex justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
+            <span>From: {getTime(chartData[0].timestamp)}</span>
+            <span>To: {getTime(chartData[chartData.length - 1].timestamp)}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

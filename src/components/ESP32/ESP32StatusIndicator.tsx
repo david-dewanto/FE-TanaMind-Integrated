@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, WifiOff, AlertTriangle, Signal, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Signal, RefreshCw } from 'lucide-react';
 import { esp32 } from '../../api';
 
 interface ESP32StatusIndicatorProps {
@@ -130,9 +130,9 @@ const ESP32StatusIndicator: React.FC<ESP32StatusIndicatorProps> = ({
         {status.isLoading ? (
           <RefreshCw size={16} className="text-gray-500 animate-spin" />
         ) : status.isConnected ? (
-          <Wifi size={16} className="text-green-600" />
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
         ) : (
-          <WifiOff size={16} className="text-red-500" />
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
         )}
       </div>
     );
@@ -148,7 +148,7 @@ const ESP32StatusIndicator: React.FC<ESP32StatusIndicatorProps> = ({
         </>
       ) : status.isConnected ? (
         <>
-          <Wifi size={16} className="text-green-600" />
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
           <span className="text-sm text-green-600">Connected</span>
           {status.signalStrength && (
             <>
@@ -166,7 +166,7 @@ const ESP32StatusIndicator: React.FC<ESP32StatusIndicatorProps> = ({
         </>
       ) : (
         <>
-          <WifiOff size={16} className="text-red-500" />
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
           <span className="text-sm text-red-500">Offline</span>
           {status.lastConnected && (
             <>

@@ -16,12 +16,11 @@ import {
   RefreshCw,
   Zap
 } from 'lucide-react';
-import { ESP32StatusIndicator, ESP32PairingModal } from '../ESP32';
+import { ESP32PairingModal } from '../ESP32';
 import SensorDataChart from './SensorDataChart';
 import { usePlants } from '../../contexts/PlantContext';
 import { LoadingSpinner, ErrorMessage } from '../common';
 import { formatDateUTC7, formatDateTimeUTC7 } from '../../utils/dateUtils';
-import { esp32 } from '../../api';
 
 interface PlantDetailsModalProps {
   plant: Plant;
@@ -41,7 +40,6 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'data' | 'settings' | 'device'>('overview');
   const [isWatering, setIsWatering] = useState(false);
   const [showESP32Modal, setShowESP32Modal] = useState(false);
-  const [isRefreshingDevice, setIsRefreshingDevice] = useState(false);
   
   const { waterPlant } = usePlants();
 
@@ -90,32 +88,6 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
     }
   };
 
-  // Function to refresh device connection status
-  const refreshDeviceStatus = async () => {
-    if (!localPlant.iotIntegration.deviceId) return;
-    
-    setIsRefreshingDevice(true);
-    
-    try {
-      // Call the API to get device status
-      const deviceInfo = await esp32.getESP32DeviceStatus(localPlant.iotIntegration.deviceId);
-      
-      setLocalPlant(prev => ({
-        ...prev,
-        iotIntegration: {
-          ...prev.iotIntegration,
-          isConnected: deviceInfo.status.connected,
-          lastConnected: deviceInfo.status.lastConnected || prev.iotIntegration.lastConnected,
-          signalStrength: deviceInfo.status.signalStrength,
-          deviceIp: deviceInfo.status.ipAddress
-        }
-      }));
-    } catch (error) {
-      console.error('Failed to refresh device status:', error);
-    } finally {
-      setIsRefreshingDevice(false);
-    }
-  };
   
   // Function to handle ESP32 pairing completion
   const handleESP32PairingSuccess = (deviceId: string) => {
@@ -206,93 +178,88 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-1">
-                <div className="bg-gray-200 rounded-lg overflow-hidden h-48 md:h-auto">
-                  {plant.image && (
+                <div className="relative bg-gray-100 rounded-lg overflow-hidden h-48 md:h-56">
+                  {plant.image ? (
                     <img 
                       src={plant.image} 
                       alt={plant.nickname} 
                       className="w-full h-full object-cover"
                     />
+                  ) : (
+                    <div className="flex items-center justify-center h-full bg-gray-50">
+                      <svg className="w-24 h-24 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M15.5 9.63a7 7 0 00-7.07-6.61 7.14 7.14 0 00-6.91 8.58 6.71 6.71 0 005.24 5.65v3.75h5v-4h.07A5.5 5.5 0 0017 11.5a5.55 5.55 0 00-1.5-1.87M12.5 15L11 13.5 12.5 12a2 2 0 10-2.83-2.83L8 10.83l-1.67-1.66A2 2 0 103.5 12L5 13.5 3.5 15a2 2 0 102.83 2.83L8 16.17l1.67 1.66a2 2 0 002.83-2.83" />
+                      </svg>
+                    </div>
                   )}
                 </div>
 
-                <div className="mt-4 bg-white rounded-lg border border-gray-200 p-3">
-                  <h3 className="font-medium text-gray-700 mb-2">Plant Information</h3>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start">
-                      <span className="font-medium w-32 text-gray-500">Scientific Name:</span>
-                      <span>{localPlant.actualName}</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium w-32 text-gray-500">Category:</span>
-                      <span>{localPlant.category}</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium w-32 text-gray-500">Species:</span>
-                      <span>{localPlant.species}</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium w-32 text-gray-500">Age:</span>
-                      <span>{localPlant.age}</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium w-32 text-gray-500">Date Added:</span>
-                      <span>{formatDateUTC7(localPlant.dateAdded)}</span>
-                    </li>
-                    <li className="flex items-center">
-                      <MapPin size={16} className="text-gray-500 mr-2" />
-                      <span>{localPlant.location}</span>
-                    </li>
-                  </ul>
+                <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="font-medium text-gray-700 mb-3">Plant Information</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Scientific Name</span>
+                      <span className="text-gray-900">{localPlant.actualName || 'Not specified'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Category</span>
+                      <span className="text-gray-900">{localPlant.category}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Species</span>
+                      <span className="text-gray-900">{localPlant.species || 'Unknown'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Age</span>
+                      <span className="text-gray-900">{localPlant.age}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Added</span>
+                      <span className="text-gray-900">{formatDateUTC7(localPlant.dateAdded)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm pt-2 border-t">
+                      <span className="text-gray-500 flex items-center">
+                        <MapPin size={14} className="mr-1" />
+                        Location
+                      </span>
+                      <span className="text-gray-900">{localPlant.location || 'Not specified'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="md:col-span-2 space-y-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                   <h3 className="font-medium text-gray-700 mb-3">Care Requirements</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="flex flex-col items-center bg-[#DFF3E2] p-3 rounded-lg">
-                      <Droplets size={24} className="text-blue-500 mb-2" />
-                      <span className="text-sm font-medium">Water Every</span>
-                      <span className="text-lg font-semibold text-[#056526]">{localPlant.wateringFrequency} days</span>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <Droplets size={24} className="text-blue-500 mx-auto mb-2" />
+                      <p className="text-xs text-gray-600">Water Every</p>
+                      <p className="text-lg font-semibold text-gray-900">{localPlant.wateringFrequency} days</p>
                     </div>
-                    <div className="flex flex-col items-center bg-[#DFF3E2] p-3 rounded-lg">
-                      <Sun size={24} className="text-amber-500 mb-2" />
-                      <span className="text-sm font-medium">Sunlight</span>
-                      <span className="text-lg font-semibold text-[#056526]">{localPlant.sunlightRequirements}</span>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <Sun size={24} className="text-amber-500 mx-auto mb-2" />
+                      <p className="text-xs text-gray-600">Sunlight</p>
+                      <p className="text-lg font-semibold text-gray-900">{localPlant.sunlightRequirements}</p>
                     </div>
-                    <div className="flex flex-col items-center bg-[#DFF3E2] p-3 rounded-lg">
-                      <Thermometer size={24} className="text-red-500 mb-2" />
-                      <span className="text-sm font-medium">Temperature</span>
-                      <span className="text-lg font-semibold text-[#056526]">{localPlant.idealTemperatureRange.min}°-{localPlant.idealTemperatureRange.max}°C</span>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <Thermometer size={24} className="text-red-500 mx-auto mb-2" />
+                      <p className="text-xs text-gray-600">Temperature</p>
+                      <p className="text-lg font-semibold text-gray-900">{localPlant.idealTemperatureRange.min}°-{localPlant.idealTemperatureRange.max}°C</p>
                     </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t text-sm text-gray-600">
+                    <span className="font-medium">Fertilizer:</span> {localPlant.fertilizerSchedule}
                   </div>
                 </div>
 
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <h3 className="font-medium text-gray-700 mb-3">Tracking Information</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Droplets size={20} className="text-blue-500 mr-2" />
-                        <span className="text-sm">Last Watered</span>
-                      </div>
-                      <span className="text-sm font-medium">{formatDateTimeUTC7(localPlant.iotIntegration.lastWatered)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Calendar size={20} className="text-[#0B9444] mr-2" />
-                        <span className="text-sm">Next Watering</span>
-                      </div>
-                      <span className="text-sm font-medium">{formatDateTimeUTC7(localPlant.tracking.nextWateringDate)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 text-right">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-700">Watering Schedule</h3>
                     <button 
                       onClick={handleWaterPlant}
                       disabled={isWatering}
-                      className="bg-[#0B9444] hover:bg-[#056526] text-white px-4 py-2 rounded-md text-sm font-medium inline-flex items-center"
+                      className="bg-[#0B9444] hover:bg-[#056526] text-white px-3 py-1.5 rounded text-sm font-medium inline-flex items-center disabled:opacity-50"
                     >
                       {isWatering ? (
                         <>
@@ -301,49 +268,130 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                         </>
                       ) : (
                         <>
-                          <Droplets size={16} className="mr-2" />
+                          <Droplets size={14} className="mr-1.5" />
                           Water Now
                         </>
                       )}
                     </button>
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 flex items-center">
+                        <Droplets size={16} className="text-blue-500 mr-2" />
+                        Last Watered
+                      </span>
+                      <span className="text-gray-900">
+                        {new Date(localPlant.iotIntegration.lastWatered).getFullYear() === 1970 
+                          ? 'Not watered yet' 
+                          : formatDateTimeUTC7(localPlant.iotIntegration.lastWatered)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 flex items-center">
+                        <Calendar size={16} className="text-green-600 mr-2" />
+                        Next Watering
+                      </span>
+                      <span className="text-gray-900">{formatDateTimeUTC7(localPlant.tracking.nextWateringDate)}</span>
+                    </div>
+                  </div>
+                  {localPlant.iotIntegration.deviceId && localPlant.iotIntegration.deviceType === 'ESP32' && (
+                    <div className="mt-3 bg-blue-50 rounded p-2 text-xs text-blue-700">
+                      ⚡ Automatic watering enabled with ESP32
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-start">
-                    <FileText size={20} className="text-gray-500 mr-2 mt-0.5" />
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-1">Notes</h3>
-                      <p className="text-sm text-gray-600">{localPlant.description || 'No notes added yet.'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-gray-700">Auto-Watering</h3>
-                    <div className="relative inline-block w-12 h-6 rounded-full bg-gray-200">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only"
-                        checked={localPlant.iotIntegration.autoWateringEnabled}
-                        readOnly
-                      />
-                      <span 
-                        className={`absolute inset-y-0 left-0 w-6 h-6 rounded-full transition-transform transform ${
-                          localPlant.iotIntegration.autoWateringEnabled 
-                            ? 'translate-x-6 bg-[#0B9444]' 
-                            : 'translate-x-0 bg-gray-400'
-                        }`}
-                      ></span>
-                    </div>
-                  </div>
+                  <h3 className="font-medium text-gray-700 mb-2 flex items-center">
+                    <FileText size={16} className="mr-2" />
+                    Notes
+                  </h3>
                   <p className="text-sm text-gray-600">
-                    {localPlant.iotIntegration.autoWateringEnabled 
-                      ? 'Automatic watering is enabled. The system will water the plant when soil moisture drops below the threshold.'
-                      : 'Automatic watering is disabled. You will receive notifications when the plant needs watering.'}
+                    {localPlant.description || (
+                      <span className="text-gray-400 italic">
+                        No notes added yet.
+                      </span>
+                    )}
                   </p>
                 </div>
+
+                {localPlant.latestSensorData && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium text-gray-700">Current Conditions</h3>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        localPlant.iotIntegration.healthStatus === 'excellent' || localPlant.iotIntegration.healthStatus === 'good'
+                          ? 'bg-green-100 text-green-700'
+                          : localPlant.iotIntegration.healthStatus === 'fair'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {localPlant.iotIntegration.healthStatus.charAt(0).toUpperCase() + localPlant.iotIntegration.healthStatus.slice(1)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="text-center">
+                        <Droplets size={20} className="text-blue-500 mx-auto mb-1" />
+                        <p className="text-xs text-gray-500">Soil</p>
+                        <p className="text-sm font-semibold">{localPlant.latestSensorData.soilHumidity}%</p>
+                        <p className="text-xs mt-1">
+                          {localPlant.latestSensorData.soilHumidity >= plant.thresholds.soilHumidity.min && 
+                           localPlant.latestSensorData.soilHumidity <= plant.thresholds.soilHumidity.max
+                            ? <span className="text-green-600">Optimal</span>
+                            : <span className="text-amber-600">Out of Range</span>
+                          }
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <svg className="w-5 h-5 text-green-500 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14.5v3a2 2 0 01-2 2h-10a2 2 0 01-2-2v-3M5 14.5a7 7 0 0 1 7-7 7 7 0 0 1 7 7" />
+                        </svg>
+                        <p className="text-xs text-gray-500">Air</p>
+                        <p className="text-sm font-semibold">{localPlant.latestSensorData.airHumidity}%</p>
+                        <p className="text-xs mt-1">
+                          {localPlant.latestSensorData.airHumidity >= plant.thresholds.airHumidity.min && 
+                           localPlant.latestSensorData.airHumidity <= plant.thresholds.airHumidity.max
+                            ? <span className="text-green-600">Optimal</span>
+                            : <span className="text-amber-600">Out of Range</span>
+                          }
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <Thermometer size={20} className="text-red-500 mx-auto mb-1" />
+                        <p className="text-xs text-gray-500">Temp</p>
+                        <p className="text-sm font-semibold">{localPlant.latestSensorData.temperature}°C</p>
+                        <p className="text-xs mt-1">
+                          {localPlant.latestSensorData.temperature >= plant.thresholds.temperature.min && 
+                           localPlant.latestSensorData.temperature <= plant.thresholds.temperature.max
+                            ? <span className="text-green-600">Optimal</span>
+                            : <span className="text-amber-600">Out of Range</span>
+                          }
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <Sun size={20} className="text-amber-500 mx-auto mb-1" />
+                        <p className="text-xs text-gray-500">Light</p>
+                        <p className="text-sm font-semibold">{localPlant.latestSensorData.luminance} lux</p>
+                        <p className="text-xs mt-1">
+                          {localPlant.latestSensorData.luminance >= plant.thresholds.luminance.min && 
+                           localPlant.latestSensorData.luminance <= plant.thresholds.luminance.max
+                            ? <span className="text-green-600">Optimal</span>
+                            : <span className="text-amber-600">Out of Range</span>
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!localPlant.latestSensorData && localPlant.iotIntegration.deviceId && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <p className="text-sm text-gray-500 text-center">
+                      No sensor data available yet. Make sure your ESP32 device is connected.
+                    </p>
+                  </div>
+                )}
+
               </div>
             </div>
           )}
@@ -631,32 +679,44 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                       <span className="text-xs text-gray-500">Optimal Range</span>
                       <span className="text-xs text-gray-500">Bright</span>
                     </div>
-                    <div className="relative w-full bg-gradient-to-r from-gray-400 to-yellow-300 rounded-full h-3 mb-1 overflow-hidden">
-                      <div className="absolute h-full bg-amber-500 border-2 border-white" 
-                        style={{ 
-                          left: `${(plant.thresholds.luminance.min / 20000) * 100}%`,
-                          width: `${((plant.thresholds.luminance.max - plant.thresholds.luminance.min) / 20000) * 100}%` 
-                        }}>
-                      </div>
-                      
-                      {/* Latest reading marker */}
-                      {sensorData.length > 0 && (
-                        <div className="absolute h-8 w-1 bg-amber-700 top-1/2 transform -translate-y-1/2 -translate-x-1/2 z-10"
-                          style={{ 
-                            left: `${Math.min(Math.max((sensorData[0]?.luminance || 0) / 20000, 0), 1) * 100}%`
-                          }}>
-                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-white px-1 py-0.5 text-xs font-bold text-amber-700 rounded shadow-sm border border-amber-200 whitespace-nowrap">
-                            {sensorData[0]?.luminance.toFixed(0)} lux
-                          </div>
-                        </div>
-                      )}
+                    <div className="relative w-full bg-gradient-to-r from-gray-300 via-yellow-100 to-yellow-200 rounded-full h-3 mb-1 overflow-hidden">
+                      {(() => {
+                        // Determine appropriate scale based on plant's max threshold
+                        const maxScale = Math.max(15000, plant.thresholds.luminance.max * 1.2);
+                        const minPos = (plant.thresholds.luminance.min / maxScale) * 100;
+                        const maxPos = (plant.thresholds.luminance.max / maxScale) * 100;
+                        const width = maxPos - minPos;
+                        
+                        return (
+                          <>
+                            <div className="absolute h-full bg-amber-500 border-2 border-white" 
+                              style={{ 
+                                left: `${minPos}%`,
+                                width: `${width}%` 
+                              }}>
+                            </div>
+                            
+                            {/* Latest reading marker */}
+                            {sensorData.length > 0 && (
+                              <div className="absolute h-8 w-1 bg-amber-700 top-1/2 transform -translate-y-1/2 -translate-x-1/2 z-10"
+                                style={{ 
+                                  left: `${Math.min(Math.max((sensorData[0]?.luminance || 0) / maxScale, 0), 1) * 100}%`
+                                }}>
+                                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-white px-1 py-0.5 text-xs font-bold text-amber-700 rounded shadow-sm border border-amber-200 whitespace-nowrap">
+                                  {sensorData[0]?.luminance.toFixed(0)} lux
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm font-medium">0 lux</span>
                       <span className="text-sm font-semibold text-amber-700">
                         {plant.thresholds.luminance.min} - {plant.thresholds.luminance.max} lux
                       </span>
-                      <span className="text-sm font-medium">20k lux</span>
+                      <span className="text-sm font-medium">{Math.max(15000, plant.thresholds.luminance.max * 1.2) >= 1000 ? `${(Math.max(15000, plant.thresholds.luminance.max * 1.2) / 1000).toFixed(0)}k` : Math.max(15000, plant.thresholds.luminance.max * 1.2)} lux</span>
                     </div>
                   </div>
                 </div>
@@ -676,10 +736,6 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                   <li className="flex justify-between">
                     <span className="text-gray-600">Watering Frequency:</span>
                     <span className="font-medium">{plant.wateringFrequency} days</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span className="text-gray-600">Auto-Watering:</span>
-                    <span className="font-medium">{plant.iotIntegration.autoWateringEnabled ? 'Enabled' : 'Disabled'}</span>
                   </li>
                   <li className="flex justify-between">
                     <span className="text-gray-600">Reminders:</span>
@@ -724,9 +780,9 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                 {!localPlant.iotIntegration.deviceId ? (
                   <div className="bg-gray-50 rounded-lg p-5 text-center">
                     <WifiOff size={36} className="text-gray-400 mx-auto mb-3" />
-                    <h4 className="text-lg font-medium text-gray-700 mb-2">No IoT Device Connected</h4>
+                    <h4 className="text-lg font-medium text-gray-700 mb-2">Manual Mode</h4>
                     <p className="text-sm text-gray-600 mb-4">
-                      This plant is not connected to any IoT devices for automated monitoring and watering.
+                      This plant is not connected to any IoT devices. You'll need to monitor and water it manually.
                     </p>
                     <button
                       onClick={() => setShowESP32Modal(true)}
@@ -738,85 +794,40 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                   </div>
                 ) : (
                   <div>
-                    <div className="flex justify-between mb-4">
-                      <div>
-                        <h4 className="text-base font-medium text-gray-800">
-                          {localPlant.iotIntegration.deviceType === 'ESP32' ? 'ESP32 Device' : 'IoT Device'}
-                        </h4>
-                        <p className="text-sm text-gray-600">ID: {localPlant.iotIntegration.deviceId}</p>
-                      </div>
-                      
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                       <div className="flex items-center">
-                        <ESP32StatusIndicator
-                          deviceId={localPlant.iotIntegration.deviceId || ''}
-                          isConnected={localPlant.iotIntegration.isConnected || false}
-                          lastConnected={localPlant.iotIntegration.lastConnected}
-                          signalStrength={localPlant.iotIntegration.signalStrength}
-                          showDetails={true}
-                          autoRefresh={true}
-                        />
-                        <button
-                          onClick={refreshDeviceStatus}
-                          disabled={isRefreshingDevice}
-                          className={`ml-3 p-2 rounded-full ${isRefreshingDevice ? 'text-gray-400' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}
-                          title="Refresh connection status"
-                        >
-                          <RefreshCw size={16} className={isRefreshingDevice ? 'animate-spin' : ''} />
-                        </button>
+                        <Wifi size={24} className="text-green-600 mr-3" />
+                        <div>
+                          <h4 className="text-base font-medium text-green-800">
+                            ESP32 Connected
+                          </h4>
+                          <p className="text-sm text-green-700">Device ID: {localPlant.iotIntegration.deviceId}</p>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div className="bg-[#F3FFF6] p-3 rounded-lg">
-                        <h5 className="text-sm font-medium text-gray-700 mb-1">Device Status</h5>
+                    <div className="bg-[#F3FFF6] p-4 rounded-lg mb-4">
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Automatic Watering Settings</h5>
+                      <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Connection:</span>
-                          <span className={`font-medium ${localPlant.iotIntegration.isConnected ? 'text-green-600' : 'text-red-500'}`}>
-                            {localPlant.iotIntegration.isConnected ? 'Online' : 'Offline'}
-                          </span>
-                        </div>
-                        {localPlant.iotIntegration.lastConnected && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Last Seen:</span>
-                            <span className="font-medium">
-                              {formatDateTimeUTC7(localPlant.iotIntegration.lastConnected)}
-                            </span>
-                          </div>
-                        )}
-                        {localPlant.iotIntegration.deviceIp && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">IP Address:</span>
-                            <span className="font-medium">{localPlant.iotIntegration.deviceIp}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="bg-[#F3FFF6] p-3 rounded-lg">
-                        <h5 className="text-sm font-medium text-gray-700 mb-1">Automation</h5>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Auto-Watering:</span>
-                          <span className={`font-medium ${localPlant.iotIntegration.autoWateringEnabled ? 'text-green-600' : 'text-gray-500'}`}>
-                            {localPlant.iotIntegration.autoWateringEnabled ? 'Enabled' : 'Disabled'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Threshold:</span>
-                          <span className="font-medium">{localPlant.thresholds.soilHumidity.min}% (Soil Humidity)</span>
+                          <span className="text-gray-600">Watering Threshold:</span>
+                          <span className="font-medium">{localPlant.thresholds.soilHumidity.min}% soil humidity</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Last Watered:</span>
-                          <span className="font-medium">{formatDateTimeUTC7(localPlant.iotIntegration.lastWatered)}</span>
+                          <span className="font-medium">
+                            {new Date(localPlant.iotIntegration.lastWatered).getFullYear() === 1970 
+                              ? 'N/A' 
+                              : formatDateTimeUTC7(localPlant.iotIntegration.lastWatered)}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-700">
-                      <p>
-                        To change device settings or update the connection, please edit the plant using the edit button in the top right corner.
+                      <p className="text-xs text-gray-500 mt-3">
+                        The ESP32 will automatically water your plant when soil moisture drops below the threshold.
                       </p>
                     </div>
                     
-                    <div className="flex justify-end space-x-3 mt-4">
+                    <div className="flex justify-center mt-4">
                       <button
                         onClick={() => setShowESP32Modal(true)}
                         className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 flex items-center"
@@ -824,16 +835,6 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
                         <RefreshCw size={16} className="mr-2" />
                         Reconnect Device
                       </button>
-                      
-                      {onEdit && (
-                        <button 
-                          onClick={onEdit}
-                          className="px-4 py-2 bg-[#0B9444] text-white rounded-md text-sm font-medium hover:bg-[#056526] flex items-center"
-                        >
-                          <EditIcon size={16} className="mr-2" />
-                          Edit Device Settings
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}

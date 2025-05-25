@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, X, WifiOff, CheckCircle, AlertCircle, RefreshCw, Zap, Key, HelpCircle } from 'lucide-react';
-import { esp32, ESP32_AP_CONFIG } from '../../api';
-import { ESP32WiFiCredentials, ESP32PairingStatus, ESP32ConnectionResponse } from '../../types';
-import { LoadingSpinner } from '../common';
+import { Wifi, X, CheckCircle, AlertCircle, RefreshCw, Zap, HelpCircle } from 'lucide-react';
+import { esp32 } from '../../api';
+import { ESP32WiFiCredentials, ESP32PairingStatus } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface ESP32PairingModalProps {
@@ -25,33 +24,8 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
   const [password, setPassword] = useState('');
   const [savedNetworks, setSavedNetworks] = useState<string[]>([]);
   
-  // Check if we're connected to the ESP32 AP on component mount
+  // Load saved networks on component mount (no ESP32 communication)
   useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        // Only check connection if we're in 'idle' or 'scanning' state
-        // to prevent infinite loops
-        if (status !== 'connecting' && status !== 'configuring' && 
-            status !== 'verifying' && status !== 'success' && status !== 'error') {
-          
-          setStatus('scanning');
-          const isConnected = await esp32.isConnectedToESP32AP();
-          
-          if (isConnected) {
-            setStatus('connecting');
-          } else {
-            setStatus('idle');
-          }
-        }
-      } catch (err) {
-        console.error('Failed to check ESP32 connection:', err);
-        setStatus('idle');
-      }
-    };
-    
-    // Only run once at component mount
-    checkConnection();
-    
     // Try to load saved networks from localStorage
     const networks = localStorage.getItem('savedWifiNetworks');
     if (networks) {
@@ -311,8 +285,8 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
       return;
     }
     
-    // Move directly to configuration step - bypassing any connection check
-    setStatus('connecting');
+    // Move directly to configuration step
+    setStatus('configuring');
     
     // Get authentication token (will be stored in the app for later use)
     const authToken = await getAuthToken();
@@ -323,7 +297,6 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
     
     setToken(authToken);
     setError(null);
-    setStatus('configuring');
     
     try {
       const credentials: ESP32WiFiCredentials = { ssid, password };
@@ -471,15 +444,7 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
                   onChange={(e) => setSsid(e.target.value)}
                   placeholder="Enter your WiFi network name"
                   className="w-full p-2 border border-gray-300 rounded-md"
-                  list="saved-networks"
                 />
-                {savedNetworks.length > 0 && (
-                  <datalist id="saved-networks">
-                    {savedNetworks.map((network) => (
-                      <option key={network} value={network} />
-                    ))}
-                  </datalist>
-                )}
               </div>
               
               <div>
@@ -508,48 +473,185 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
           </div>
         );
         
-      case 'scanning':
-      case 'connecting':
-        return (
-          <div className="flex flex-col items-center justify-center py-8">
-            <LoadingSpinner />
-            <p className="mt-4 text-gray-700">
-              {status === 'scanning' ? 'Checking for ESP32 device...' : 'Connecting to ESP32...'}
-            </p>
-          </div>
-        );
-        
       case 'configuring':
       case 'verifying':
       case 'sending_token':
+        const getProgressPercentage = () => {
+          switch (status) {
+            case 'configuring': return 33;
+            case 'verifying': return 66;
+            case 'sending_token': return 90;
+            default: return 0;
+          }
+        };
+        
+        const getProgressStep = () => {
+          switch (status) {
+            case 'configuring': return 'Step 1 of 3';
+            case 'verifying': return 'Step 2 of 3';
+            case 'sending_token': return 'Step 3 of 3';
+            default: return '';
+          }
+        };
+
+        const getStepIcon = () => {
+          switch (status) {
+            case 'configuring': return <Zap size={24} className="text-[#0B9444]" />;
+            case 'verifying': return <Wifi size={24} className="text-[#0B9444]" />;
+            case 'sending_token': return <CheckCircle size={24} className="text-[#0B9444]" />;
+            default: return <RefreshCw size={24} className="text-[#0B9444]" />;
+          }
+        };
+
         return (
           <div className="flex flex-col items-center justify-center py-8">
-            <LoadingSpinner />
-            <p className="mt-4 text-gray-700 font-semibold">
-              {status === 'configuring' 
-                ? 'Sending WiFi credentials to ESP32...' 
-                : status === 'sending_token'
-                ? 'Sending authentication token to ESP32...'
-                : 'Verifying connection...'}
-            </p>
-            {status === 'configuring' && (
-              <p className="mt-2 text-sm text-gray-600 text-center">
-                Your ESP32 device will connect to your home WiFi network <strong>"{ssid}"</strong>.<br/>
-                Please wait while the device receives the credentials.
-              </p>
-            )}
-            {status === 'verifying' && (
-              <p className="mt-2 text-sm text-gray-600 text-center">
-                The ESP32 is connecting to your WiFi network <strong>"{ssid}"</strong>. This may take up to 30 seconds.<br/>
-                <span className="text-orange-600">Please remain connected to the ESP32_AP_Config network while we check connection status.</span>
-              </p>
-            )}
-            {status === 'sending_token' && (
-              <p className="mt-2 text-sm text-gray-600 text-center">
-                Authenticating the ESP32 device with the TanaMind backend.<br/>
-                This allows your device to securely send plant data to your account.
-              </p>
-            )}
+            {/* Enhanced Progress Bar */}
+            <div className="w-full max-w-md mb-8">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-medium text-[#0B9444]">{getProgressStep()}</span>
+                <span className="text-sm text-gray-500">{getProgressPercentage()}%</span>
+              </div>
+              <div className="relative w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-[#0B9444] to-[#056526] h-3 rounded-full transition-all duration-700 ease-out relative"
+                  style={{ width: `${getProgressPercentage()}%` }}
+                >
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-pulse"></div>
+                </div>
+                {/* Progress glow effect */}
+                <div 
+                  className="absolute top-0 h-3 w-8 bg-gradient-to-r from-transparent via-[#0B9444]/50 to-transparent rounded-full blur-sm transition-all duration-700 ease-out"
+                  style={{ left: `${Math.max(0, getProgressPercentage() - 8)}%` }}
+                ></div>
+              </div>
+              
+              {/* Step indicators */}
+              <div className="flex justify-between mt-4">
+                {[33, 66, 90].map((step, index) => (
+                  <div 
+                    key={index}
+                    className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                      getProgressPercentage() >= step 
+                        ? 'bg-[#0B9444] scale-110' 
+                        : getProgressPercentage() > step - 20
+                        ? 'bg-[#0B9444]/50 scale-105 animate-pulse'
+                        : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Enhanced Status Icon and Animation */}
+            <div className="text-center mb-6">
+              <div className="relative w-20 h-20 mx-auto mb-4">
+                {/* Outer rotating ring */}
+                <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#0B9444] animate-spin"></div>
+                
+                {/* Middle pulsing ring */}
+                <div className="absolute inset-2 rounded-full bg-[#F3FFF6] animate-pulse"></div>
+                
+                {/* Inner icon container */}
+                <div className="absolute inset-4 rounded-full bg-white flex items-center justify-center shadow-sm">
+                  <div className="transform transition-all duration-500 hover:scale-110">
+                    {getStepIcon()}
+                  </div>
+                </div>
+                
+                {/* Floating particles animation */}
+                <div className="absolute inset-0">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-1 h-1 bg-[#0B9444] rounded-full animate-ping"
+                      style={{
+                        top: `${20 + i * 15}%`,
+                        left: `${25 + i * 25}%`,
+                        animationDelay: `${i * 0.5}s`,
+                        animationDuration: '2s'
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 mb-2 animate-fade-in">
+                {status === 'configuring' 
+                  ? 'Configuring Device' 
+                  : status === 'sending_token'
+                  ? 'Authenticating Device'
+                  : 'Verifying Connection'}
+              </h3>
+              
+              <div className="flex items-center justify-center gap-1 text-gray-700 font-medium">
+                <span>
+                  {status === 'configuring' 
+                    ? 'Sending WiFi credentials to ESP32' 
+                    : status === 'sending_token'
+                    ? 'Sending authentication token to ESP32'
+                    : 'Verifying connection'}
+                </span>
+                <div className="flex gap-1 ml-1">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Enhanced Status Information Cards */}
+            <div className="w-full max-w-md">
+              {status === 'configuring' && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100 transform transition-all duration-500 hover:scale-105 animate-slide-up">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 animate-glow">
+                      <Zap size={16} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900 mb-1">WiFi Configuration</p>
+                      <p className="text-xs text-blue-700">
+                        Sending credentials to <strong>"{ssid}"</strong> network.<br/>
+                        ESP32 will restart and connect to your WiFi.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {status === 'verifying' && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-lg border border-amber-100 transform transition-all duration-500 hover:scale-105 animate-slide-up">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 animate-glow">
+                      <Wifi size={16} className="text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-amber-900 mb-1">Network Verification</p>
+                      <p className="text-xs text-amber-700">
+                        ESP32 connecting to <strong>"{ssid}"</strong>. This may take up to 30 seconds.<br/>
+                        <span className="font-medium">Stay connected to ESP32_AP_Config network.</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {status === 'sending_token' && (
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-4 rounded-lg border border-emerald-100 transform transition-all duration-500 hover:scale-105 animate-slide-up">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 animate-glow">
+                      <CheckCircle size={16} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-emerald-900 mb-1">Device Authentication</p>
+                      <p className="text-xs text-emerald-700">
+                        Securing connection with TanaMind backend.<br/>
+                        Your device will be ready to monitor plants automatically.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         );
         
@@ -563,13 +665,24 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
             <p className="mt-2 text-gray-600 text-center">
               Your ESP32 device <strong>(ID: {deviceId})</strong> has been successfully configured.
             </p>
+            {/* Automatic Watering Notification */}
+            <div className="mt-4 bg-green-50 p-4 rounded-md w-full max-w-sm border border-green-200">
+              <div className="flex items-center mb-2">
+                <CheckCircle size={16} className="text-green-600 mr-2" />
+                <h4 className="font-semibold text-green-800 text-sm">Automatic Watering Enabled</h4>
+              </div>
+              <p className="text-sm text-green-700">
+                Your ESP32 device will automatically water your plants when soil moisture drops below the optimal threshold. No manual configuration needed!
+              </p>
+            </div>
+
             <div className="mt-4 bg-blue-50 p-4 rounded-md w-full max-w-sm">
               <h4 className="font-medium text-blue-700 text-sm">What happens next:</h4>
               <ul className="mt-2 text-sm text-blue-600 list-disc pl-5 space-y-1">
                 <li>The ESP32 is now connecting to your WiFi network "{ssid}"</li>
                 <li>Once connected, sensor data will begin transmitting to your TanaMind account</li>
-                <li>The watering system will activate automatically when soil moisture drops below threshold</li>
-                <li>You can view the sensor data in the Dashboard</li>
+                <li>You can view real-time sensor data in the Dashboard</li>
+                <li>Receive notifications about your plant's health and watering events</li>
               </ul>
             </div>
             <div className="mt-4 bg-amber-50 p-4 rounded-md w-full max-w-sm">
@@ -625,10 +738,10 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
                 Try Again
               </button>
               <button
-                onClick={onClose}
+                onClick={retryConnection}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
               >
-                Cancel
+                Reset
               </button>
             </div>
           </div>
@@ -637,7 +750,7 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
   };
   
   return (
-    <div className="fixed inset-0 z-10 bg-black bg-opacity-50 overflow-hidden">
+    <div className="fixed inset-0 z-[70] bg-black bg-opacity-50 overflow-hidden">
       {/* Container with proper positioning */}
       <div className="absolute inset-x-0 top-0 w-full h-full flex flex-col sm:p-4 sm:items-center sm:justify-center">
         {/* Modal for all screen sizes */}
@@ -668,7 +781,7 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
           <button 
             onClick={onClose}
             aria-label="Close"
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg p-1 transition-colors"
           >
             <X size={24} />
           </button>

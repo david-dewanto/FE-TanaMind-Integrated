@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plant } from '../../types';
-import { Droplets, Sun, Thermometer, Check, AlertTriangle, MoreVertical, Edit, Trash2, Wifi, WifiOff } from 'lucide-react';
+import { Droplets, Sun, Thermometer, Check, AlertTriangle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { ESP32StatusIndicator } from '../ESP32';
 
 interface PlantCardProps {

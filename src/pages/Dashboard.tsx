@@ -209,7 +209,7 @@ const Dashboard: React.FC = () => {
               className="flex items-center justify-center mx-auto bg-[#0B9444] hover:bg-[#056526] text-white px-6 py-3 rounded-lg transition-colors"
             >
               <Plus size={20} className="mr-2" />
-              <span>Add Your First Plant</span>
+              <span>Go to Plants</span>
             </button>
           </div>
         </div>

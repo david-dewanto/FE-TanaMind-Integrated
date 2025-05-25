@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Wifi, WifiOff, Leaf, Zap, RefreshCw, Sparkles, Info, Check, AlertTriangle } from 'lucide-react';
+import { X, Loader2, Wifi, WifiOff, Leaf, Zap, RefreshCw, Sparkles, Info, Check, AlertTriangle, Image } from 'lucide-react';
 import { Plant } from '../types';
 import { usePlants } from '../contexts/PlantContext';
 import { apiToUiPlant, uiToApiPlantRequest } from '../utils/plantConverters';
@@ -7,6 +7,7 @@ import { ESP32PairingModal, ESP32StatusIndicator } from './ESP32';
 import { aiAnalytics, PlantCareSuggestions } from '../api/ai';
 import { useAIAnalytics } from '../contexts/AIAnalyticsContext';
 import { Tooltip } from './common';
+import { generatePlantImage } from '../api/images';
 
 interface PlantFormProps {
   plant?: Plant; // If provided, we're editing an existing plant
@@ -48,9 +49,6 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
   const [isDeviceConnected, setIsDeviceConnected] = useState(false);
   const [showESP32Modal, setShowESP32Modal] = useState(false);
   
-  // Auto-watering
-  const [autoWatering, setAutoWatering] = useState(false);
-  
   const { createPlant, updatePlant } = usePlants();
   const { state: aiState } = useAIAnalytics();
   
@@ -59,6 +57,10 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
   const [aiSuggestions, setAiSuggestions] = useState<PlantCareSuggestions | null>(null);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [hasAppliedSuggestions, setHasAppliedSuggestions] = useState(false);
+  
+  // Image generation states
+  const [plantImage, setPlantImage] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   
   // Initialize form if we're editing
   useEffect(() => {
@@ -92,8 +94,10 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
         setIsDeviceConnected(plant.iotIntegration.isConnected || false);
       }
       
-      // Auto-watering
-      setAutoWatering(plant.iotIntegration.autoWateringEnabled);
+      // Set existing image if editing
+      if (plant.image) {
+        setPlantImage(plant.image);
+      }
     }
   }, [plant]);
   
@@ -103,6 +107,35 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
     setDeviceType('ESP32');
     setIsDeviceConnected(true);
     setShowESP32Modal(false);
+  };
+  
+  // Generate plant image based on name
+  const handleGenerateImage = async () => {
+    if (!actualName && !nickname) {
+      setFormError('Please enter a plant name first');
+      return;
+    }
+    
+    setIsGeneratingImage(true);
+    setFormError(null);
+    
+    try {
+      const imageUrl = await generatePlantImage({
+        plantName: actualName || nickname,
+        species: actualName // Use species if available
+      });
+      
+      if (imageUrl) {
+        setPlantImage(imageUrl);
+      } else {
+        setFormError('Could not generate image. Will use default.');
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      setFormError('Failed to generate image.');
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
   
   // Function to toggle IoT device usage
@@ -246,6 +279,22 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
     try {
       setIsSubmitting(true);
       
+      // Generate image if not already generated and creating new plant
+      if (!isEditMode && !plantImage && actualName) {
+        try {
+          const imageUrl = await generatePlantImage({
+            plantName: actualName,
+            species: actualName
+          });
+          if (imageUrl) {
+            setPlantImage(imageUrl);
+          }
+        } catch (error) {
+          console.error('Failed to auto-generate image:', error);
+          // Continue without image
+        }
+      }
+      
       // Create UI plant object
       const plantData: Plant = {
         id: plant?.id || '',
@@ -276,7 +325,7 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
           deviceIp: useIotDevice && deviceIp ? deviceIp : undefined,
           isConnected: useIotDevice ? isDeviceConnected : undefined,
           lastConnected: useIotDevice && isDeviceConnected ? new Date().toISOString() : undefined,
-          autoWateringEnabled: useIotDevice ? autoWatering : false,
+          autoWateringEnabled: useIotDevice && deviceType === 'ESP32' ? true : false,
           lastWatered: plant?.iotIntegration.lastWatered || new Date().toISOString(),
           healthStatus: plant?.iotIntegration.healthStatus || 'good',
         },
@@ -287,7 +336,7 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
             frequency: 1,
           },
         },
-        image: plant?.image,
+        image: plantImage || plant?.image,
       };
       
       // Convert to API request format
@@ -588,6 +637,59 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
                 </div>
                 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Plant Image
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    {plantImage ? (
+                      <div className="relative">
+                        <img 
+                          src={plantImage} 
+                          alt={nickname || actualName}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPlantImage(null)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <Image size={32} className="text-gray-400" />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleGenerateImage}
+                      disabled={isGeneratingImage || (!actualName && !nickname)}
+                      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        !isGeneratingImage && (actualName || nickname)
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {isGeneratingImage ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Image size={16} />
+                          Generate Image
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    AI will generate an image based on the plant name
+                  </p>
+                </div>
+                
+                <div>
                   <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
                     Location
                   </label>
@@ -706,19 +808,6 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
                       placeholder="Max"
                     />
                   </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    id="autoWatering"
-                    type="checkbox"
-                    checked={autoWatering}
-                    onChange={(e) => setAutoWatering(e.target.checked)}
-                    className="h-4 w-4 text-[#0B9444] focus:ring-[#39B54A] border-gray-300 rounded"
-                  />
-                  <label htmlFor="autoWatering" className="ml-2 block text-sm text-gray-700">
-                    Enable Auto-Watering
-                  </label>
                 </div>
               </div>
             </div>

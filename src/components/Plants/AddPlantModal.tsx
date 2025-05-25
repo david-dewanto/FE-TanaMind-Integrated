@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Wifi, Leaf, Check, Sparkles, Info, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, Wifi, Leaf, Check, Sparkles, Info, AlertTriangle, Loader2, Tag, TreePine, Hash, Layers, MapPin, FileText } from 'lucide-react';
 import { usePlants } from '../../contexts/PlantContext';
 import { PlantRequest } from '../../api/plants';
 import { LoadingSpinner, Tooltip, EnhancedTooltip } from '../common';
@@ -186,8 +186,8 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
     try {
       const suggestions = await aiAnalytics.getPlantCareSuggestions(
         formData.plant_name,
-        formData.species || formData.plant_name,
-        formData.category
+        formData.plant_name,  // Only use plant name, not species
+        'Unknown'  // Don't send category
       );
       
       setAiSuggestions(suggestions);
@@ -270,10 +270,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
   };
   
   return (
-    <div 
-      className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
-      onClick={onClose}
-    >
+    <>
       {showEsp32Modal && (
         <ESP32PairingModal
           onClose={() => setShowEsp32Modal(false)}
@@ -281,34 +278,46 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
         />
       )}
       
+      <div 
+        className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
+        onClick={onClose}
+      >
+      
       {/* AI Suggestions Modal */}
       {showAISuggestions && aiSuggestions && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4" onClick={() => setShowAISuggestions(false)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center border-b border-gray-200 p-4 bg-gradient-to-r from-purple-50 to-indigo-50">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Sparkles className="text-purple-600" size={20} />
-                  AI Plant Care Suggestions
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {aiSuggestions.plantIdentification.confidence === 'high' 
-                    ? `Identified as: ${aiSuggestions.plantIdentification.commonName}`
-                    : aiSuggestions.defaultFallback
-                    ? 'General houseplant care recommendations'
-                    : `Best match: ${aiSuggestions.plantIdentification.commonName}`
-                  }
-                </p>
+          <div className="relative w-full max-w-2xl max-h-[90vh] flex" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col bg-white rounded-2xl shadow-2xl w-full border border-gray-200 overflow-hidden">
+              {/* Modal header - Fixed */}
+              <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
+                    <Sparkles className="text-white" size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      AI Plant Care Suggestions
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {aiSuggestions.plantIdentification.confidence === 'high' 
+                        ? `Identified as: ${aiSuggestions.plantIdentification.commonName}`
+                        : aiSuggestions.defaultFallback
+                        ? 'General houseplant care recommendations'
+                        : `Best match: ${aiSuggestions.plantIdentification.commonName}`
+                      }
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowAISuggestions(false)}
+                  className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
               </div>
-              <button 
-                onClick={() => setShowAISuggestions(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X size={24} />
-              </button>
-            </div>
             
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Content area - Scrollable */}
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
               {/* Plant Identification */}
               <div className="bg-purple-50 rounded-lg p-4">
                 <h4 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
@@ -399,31 +408,33 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
               )}
             </div>
             
-            <div className="border-t border-gray-200 p-4 flex justify-end gap-3">
-              <button
-                onClick={() => setShowAISuggestions(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={applyAISuggestions}
-                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2"
-              >
-                <Check size={16} />
-                Apply Suggestions
-              </button>
+              {/* Footer with buttons - Fixed */}
+              <div className="flex-shrink-0 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 flex justify-between items-center border-t border-gray-200">
+                <button
+                  onClick={() => setShowAISuggestions(false)}
+                  className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors shadow-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={applyAISuggestions}
+                  className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 font-medium transition-all shadow-md hover:shadow-lg transform hover:scale-105 flex items-center gap-2"
+                >
+                  <Check size={16} />
+                  Apply Suggestions
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
       
       {/* Centered modal container with proper spacing */}
-      <div className="relative m-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8" onClick={(e) => e.stopPropagation()}>
+      <div className="relative w-full max-w-3xl flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
         {/* Modal with rounded corners matching AI chat */}
-        <div className="flex flex-col bg-white rounded-2xl shadow-2xl w-full border border-gray-200 overflow-hidden">
+        <div className="flex flex-col bg-white rounded-2xl shadow-2xl w-full border border-gray-200 max-h-[85vh] overflow-hidden">
           {/* Modal header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
                 <Leaf size={20} className="text-white" />
@@ -452,7 +463,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
           </div>
         
           {/* Content area */}
-          <div className="px-6 py-6 flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             {error && (
               <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
                 {error}
@@ -477,10 +488,10 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
               {step === 1 && (
                 <div className="space-y-6">
                   {/* First Row - Nickname and Plant Name */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Nickname Field */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Nickname <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -488,119 +499,79 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                         name="nickname"
                         value={formData.nickname}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-lg ${
+                        className={`w-full px-3 py-2 border rounded-lg ${
                           formErrors.nickname ? 'border-red-500' : 'border-gray-300'
-                        } focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors`}
+                        } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
                         placeholder="e.g. Living Room Fern"
                       />
                       {formErrors.nickname && (
-                        <p className="text-sm text-red-500 flex items-center gap-1">
-                          <AlertTriangle size={12} />
-                          {formErrors.nickname}
-                        </p>
+                        <p className="mt-1 text-sm text-red-500">{formErrors.nickname}</p>
                       )}
                     </div>
                     
                     {/* Plant Name Field */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-semibold text-gray-700">
-                          Plant Name <span className="text-red-500">*</span>
-                        </label>
-                        {aiState.isAvailable && (
-                          <Tooltip
-                            content="AI-powered plant care available"
-                            position="bottom"
-                          >
-                            <span className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full inline-flex items-center gap-1 border border-purple-200">
-                              <Sparkles size={12} className="animate-pulse" />
-                              AI Available
-                            </span>
-                          </Tooltip>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="relative group">
-                          <input
-                            type="text"
-                            name="plant_name"
-                            value={formData.plant_name}
-                            onChange={(e) => {
-                              handleInputChange(e);
-                              setHasAppliedSuggestions(false);
-                            }}
-                            className={`w-full px-4 py-3 border rounded-lg ${
-                              formErrors.plant_name ? 'border-red-500' : 'border-gray-300'
-                            } focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors`}
-                            placeholder="e.g. Boston Fern, Snake Plant, Monstera"
-                          />
-                        </div>
-                        
-                        {/* AI Suggestion Button - Separate from input */}
-                        <div className="flex justify-end">
-                          <Tooltip
-                            content={
-                              !aiState.isAvailable 
-                                ? 'AI service temporarily offline - manual entry still available'
-                                : !formData.plant_name.trim()
-                                ? 'Enter your plant name above to get AI-powered care suggestions'
-                                : 'Click to get personalized care recommendations from AI'
-                            }
-                            position="left"
-                          >
-                            <button
-                              type="button"
-                              onClick={getAISuggestions}
-                              disabled={isLoadingAISuggestions || !formData.plant_name.trim() || !aiState.isAvailable}
-                              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm ${
-                                aiState.isAvailable && formData.plant_name.trim()
-                                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:scale-105'
-                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                              }`}
-                            >
-                              {isLoadingAISuggestions ? (
-                                <>
-                                  <div className="relative">
-                                    <Loader2 size={16} className="animate-spin" />
-                                  </div>
-                                  <span>Analyzing...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <div className={`relative ${aiState.isAvailable && formData.plant_name.trim() ? 'text-yellow-300' : 'text-gray-400'}`}>
-                                    <Sparkles size={16} className={aiState.isAvailable && formData.plant_name.trim() ? 'animate-pulse' : ''} />
-                                  </div>
-                                  <span>Get AI Suggestions</span>
-                                </>
-                              )}
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </div>
-                      
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Plant Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="plant_name"
+                        value={formData.plant_name}
+                        onChange={(e) => {
+                          handleInputChange(e);
+                          setHasAppliedSuggestions(false);
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg ${
+                          formErrors.plant_name ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                        placeholder="e.g. Boston Fern, Snake Plant"
+                      />
                       {formErrors.plant_name && (
-                        <p className="text-sm text-red-500 flex items-center gap-1">
-                          <AlertTriangle size={12} />
-                          {formErrors.plant_name}
-                        </p>
-                      )}
-                      
-                      {hasAppliedSuggestions && (
-                        <p className="text-sm text-green-600 flex items-center gap-1">
-                          <Check size={14} />
-                          AI suggestions applied
-                        </p>
+                        <p className="mt-1 text-sm text-red-500">{formErrors.plant_name}</p>
                       )}
                     </div>
                     
                   </div>
+
+                  {/* AI Suggestions Button */}
+                  {aiState.isAvailable && (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={getAISuggestions}
+                        disabled={isLoadingAISuggestions || !formData.plant_name.trim()}
+                        className={`w-full px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                          formData.plant_name.trim()
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {isLoadingAISuggestions ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Getting AI suggestions...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={16} />
+                            <span>Get AI Care Suggestions</span>
+                          </>
+                        )}
+                      </button>
+                      {hasAppliedSuggestions && (
+                        <p className="mt-2 text-sm text-green-600 text-center">
+                          ✓ AI suggestions applied
+                        </p>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Second Row - Species and Category */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Species Field */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Species <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -608,29 +579,26 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                         name="species"
                         value={formData.species}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-lg ${
+                        className={`w-full px-3 py-2 border rounded-lg ${
                           formErrors.species ? 'border-red-500' : 'border-gray-300'
-                        } focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors`}
+                        } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
                         placeholder="e.g. Nephrolepis exaltata"
                       />
                       {formErrors.species && (
-                        <p className="text-sm text-red-500 flex items-center gap-1">
-                          <AlertTriangle size={12} />
-                          {formErrors.species}
-                        </p>
+                        <p className="mt-1 text-sm text-red-500">{formErrors.species}</p>
                       )}
                     </div>
                     
                     {/* Category Field */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Category
                       </label>
                       <select
                         name="category"
                         value={formData.category}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 transition-colors appearance-none bg-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="Indoor">Indoor</option>
                         <option value="Outdoor">Outdoor</option>
@@ -646,8 +614,8 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                   </div>
                   
                   {/* Location Field */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Location
                     </label>
                     <input
@@ -655,23 +623,23 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                       name="location"
                       value={formData.location}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="e.g. Living Room Window"
                     />
                   </div>
                   
                   {/* Description Field */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700">
-                      Description
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description <span className="text-sm text-gray-500">(optional)</span>
                     </label>
                     <textarea
                       name="description"
                       value={formData.description}
                       onChange={handleInputChange}
                       rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-colors resize-none"
-                      placeholder="Add any notes or details about your plant..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      placeholder="Add any notes about your plant..."
                     />
                   </div>
                 </div>
@@ -1086,6 +1054,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
         </div>
       </div>
     </div>
+    </>
   );
 };
 

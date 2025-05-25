@@ -563,20 +563,6 @@ const EditPlantModal: React.FC<EditPlantModalProps> = ({ plant, onClose, onSucce
                   </p>
                 </div>
                 
-                <div className="flex items-center space-x-2 py-2">
-                  <input
-                    type="checkbox"
-                    id="auto_watering_enabled"
-                    name="auto_watering_enabled"
-                    checked={formData.auto_watering_enabled}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-[#0B9444] rounded border-gray-300 focus:ring-[#0B9444]"
-                  />
-                  <label htmlFor="auto_watering_enabled" className="text-sm font-medium text-gray-700">
-                    Enable automatic watering (requires compatible device)
-                  </label>
-                </div>
-                
                 <div className="bg-[#F3FFF6] p-4 rounded-md mt-4">
                   <h3 className="font-medium text-gray-700 mb-2">Smart Features Overview</h3>
                   <p className="text-sm text-gray-600">
@@ -584,7 +570,7 @@ const EditPlantModal: React.FC<EditPlantModalProps> = ({ plant, onClose, onSucce
                   </p>
                   <ul className="mt-2 text-sm text-gray-600 list-disc list-inside space-y-1">
                     <li>Real-time monitoring of soil moisture, temperature, humidity and light</li>
-                    <li>Automated watering based on soil moisture levels</li>
+                    <li>Automatic watering when soil moisture drops below threshold (ESP32 devices)</li>
                     <li>Alerts when conditions fall outside optimal ranges</li>
                     <li>Historical data tracking and analytics</li>
                   </ul>
