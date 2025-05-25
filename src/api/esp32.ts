@@ -273,6 +273,12 @@ export const configureESP32WiFi = async (
       };
     }
     
+    // Check if we're in production (HTTPS)
+    const isProduction = window.location.protocol === 'https:';
+    if (isProduction) {
+      esp32DebugLog('⚠️ Production environment detected. Direct ESP32 communication may be blocked by browser security.', null, 'warn');
+    }
+    
     // First verify we can reach the ESP32, unless skipConnectionCheck is true
     if (!skipConnectionCheck) {
       const isConnected = await isConnectedToESP32AP();
@@ -289,61 +295,129 @@ export const configureESP32WiFi = async (
     
     esp32DebugLog('Sending WiFi credentials to:', url);
     
-    // Make direct fetch request to ESP32 (don't use the API client as the ESP32 is not our backend)
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-      mode: 'no-cors', // Allow request without CORS headers
-      // Longer timeout as the ESP32 might take time to connect to WiFi
-      signal: AbortSignal.timeout(15000)
-    });
-
-    esp32DebugLog(`WiFi config response type: ${response.type}, status: ${response.status}`, response);
-    
-    // When using 'no-cors', the response is "opaque" and we can't read status or body
-    // So we assume success based on the request completing without a network error
-    if (response.type === 'opaque') {
-      return {
-        success: true,
-        message: 'WiFi credentials sent (opaque response)',
-        deviceId: ESP32_AP_CONFIG.deviceId // Use the device ID from the Arduino code
-      };
-    }
-    
     try {
-      const responseText = await response.text();
-      esp32DebugLog('WiFi config response text:', responseText);
-
-      if (!response.ok) {
+      // Try multiple approaches to maximize success
+      const attempts = [];
+      
+      // Attempt 1: Standard POST with JSON
+      attempts.push(
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+          mode: 'no-cors',
+          signal: AbortSignal.timeout(5000)
+        }).catch(e => {
+          esp32DebugLog('JSON POST attempt failed:', e, 'warn');
+          return null;
+        })
+      );
+      
+      // Attempt 2: Form data POST
+      const formData = new FormData();
+      formData.append('ssid', credentials.ssid);
+      formData.append('password', credentials.password);
+      
+      attempts.push(
+        fetch(url, {
+          method: 'POST',
+          body: formData,
+          mode: 'no-cors',
+          signal: AbortSignal.timeout(5000)
+        }).catch(e => {
+          esp32DebugLog('FormData POST attempt failed:', e, 'warn');
+          return null;
+        })
+      );
+      
+      // Attempt 3: URL-encoded POST
+      const urlEncodedData = `ssid=${encodeURIComponent(credentials.ssid)}&password=${encodeURIComponent(credentials.password)}`;
+      
+      attempts.push(
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: urlEncodedData,
+          mode: 'no-cors',
+          signal: AbortSignal.timeout(5000)
+        }).catch(e => {
+          esp32DebugLog('URL-encoded POST attempt failed:', e, 'warn');
+          return null;
+        })
+      );
+      
+      // Attempt 4: GET with query parameters (fallback)
+      const getUrl = `${url}?ssid=${encodeURIComponent(credentials.ssid)}&password=${encodeURIComponent(credentials.password)}`;
+      attempts.push(
+        fetch(getUrl, {
+          method: 'GET',
+          mode: 'no-cors',
+          signal: AbortSignal.timeout(5000)
+        }).catch(e => {
+          esp32DebugLog('GET attempt failed:', e, 'warn');
+          return null;
+        })
+      );
+      
+      // Wait for at least one attempt to succeed
+      const results = await Promise.allSettled(attempts);
+      const successfulAttempts = results.filter(r => r.status === 'fulfilled' && r.value !== null).length;
+      
+      esp32DebugLog(`WiFi config attempts completed. Successful: ${successfulAttempts}/${attempts.length}`);
+      
+      if (successfulAttempts > 0) {
+        // In production with HTTPS, we can't verify the actual response
+        // but if the request didn't throw an error, we assume it was sent
+        if (isProduction) {
+          return {
+            success: true,
+            message: 'WiFi credentials sent. Please check your ESP32 device to confirm connection.',
+            deviceId: ESP32_AP_CONFIG.deviceId
+          };
+        } else {
+          return {
+            success: true,
+            message: 'WiFi credentials sent successfully',
+            deviceId: ESP32_AP_CONFIG.deviceId
+          };
+        }
+      } else {
+        throw new Error('All communication attempts failed');
+      }
+    } catch (error) {
+      esp32DebugLog('Error sending WiFi config directly:', error, 'error');
+      
+      // Provide more helpful error message for production
+      if (isProduction) {
         return {
           success: false,
-          message: `ESP32 returned error: ${response.status} ${response.statusText}`
+          message: 'Unable to communicate with ESP32 from HTTPS site. Please use the mobile app or ensure you are connected to the ESP32 WiFi network.'
         };
       }
-      
-      return {
-        success: true,
-        message: responseText || 'WiFi credentials sent successfully',
-        deviceId: ESP32_AP_CONFIG.deviceId, // Use the device ID from the Arduino code
-      };
-    } catch (error) {
-      // If we can't read the response, but the request didn't throw,
-      // assume success with the no-cors mode
-      esp32DebugLog('Could not read response (likely due to CORS/no-cors mode)');
-      return {
-        success: true,
-        message: 'WiFi credentials likely sent (could not read response)',
-        deviceId: ESP32_AP_CONFIG.deviceId // Use the device ID from the Arduino code
-      };
+      throw error;
     }
   } catch (error) {
-    esp32DebugLog('Failed to configure ESP32 WiFi:', error, 'error');
+    esp32DebugLog('Failed to configure ESP32:', error, 'error');
+    
+    // Provide user-friendly error messages
+    let message = 'Failed to communicate with ESP32';
+    if (error instanceof Error) {
+      if (error.message.includes('Failed to fetch')) {
+        message = 'Cannot reach ESP32. Please ensure you are connected to the ESP32 WiFi network and try again.';
+      } else if (error.message.includes('timeout')) {
+        message = 'Connection to ESP32 timed out. Please ensure the device is powered on and try again.';
+      } else {
+        message = error.message;
+      }
+    }
+    
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to communicate with ESP32'
+      message
     };
   }
 };

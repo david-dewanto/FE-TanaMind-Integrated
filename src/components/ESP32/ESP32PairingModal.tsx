@@ -3,6 +3,7 @@ import { Wifi, X, CheckCircle, AlertCircle, RefreshCw, Zap, HelpCircle } from 'l
 import { esp32 } from '../../api';
 import { ESP32WiFiCredentials, ESP32PairingStatus } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import ESP32SetupGuide from './ESP32SetupGuide';
 
 interface ESP32PairingModalProps {
   onClose: () => void;
@@ -23,6 +24,9 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
   const [ssid, setSsid] = useState('');
   const [password, setPassword] = useState('');
   const [savedNetworks, setSavedNetworks] = useState<string[]>([]);
+  
+  // Check if we're in production (HTTPS)
+  const isProduction = window.location.protocol === 'https:';
   
   // Load saved networks on component mount (no ESP32 communication)
   useEffect(() => {
@@ -395,6 +399,11 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
       case 'idle':
         return (
           <div className="space-y-4 pb-2">
+            {/* Show setup guide for production environments */}
+            {isProduction && (
+              <ESP32SetupGuide isProduction={isProduction} />
+            )}
+            
             <div className="bg-blue-50 p-4 rounded-md">
               <h3 className="font-medium text-blue-700 mb-2 flex items-center">
                 <Wifi className="mr-2" size={18} />
