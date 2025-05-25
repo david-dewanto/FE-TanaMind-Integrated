@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TanaMind ESP32 Setup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            color: #0B9444;
+        }
+        
+        .logo svg {
+            width: 32px;
+            height: 32px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #0B9444;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #0B9444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #056526;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #0B9444;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .instructions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .step {
+            margin-bottom: 8px;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #0B9444;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 8px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <h1>TanaMind ESP32 Setup</h1>
+        </div>
+        
+        <p class="subtitle">Configure your ESP32 device for TanaMind</p>
+        
+        <div class="instructions">
+            <div class="step">
+                <span class="step-number">1</span>
+                Connect to ESP32_AP_Config WiFi
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                Fill in your WiFi credentials below
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                Click Configure to send settings
+            </div>
+        </div>
+        
+        <form id="configForm">
+            <div class="form-group">
+                <label for="ssid">WiFi Network Name (SSID)</label>
+                <input type="text" id="ssid" name="ssid" required placeholder="Enter your WiFi name">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">WiFi Password</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your WiFi password">
+            </div>
+            
+            <div class="form-group">
+                <label for="token">Auth Token (Optional)</label>
+                <input type="text" id="token" name="token" placeholder="Paste your TanaMind auth token">
+            </div>
+            
+            <button type="submit" id="submitBtn">
+                Configure ESP32
+            </button>
+        </form>
+        
+        <div id="status" class="status"></div>
+    </div>
+    
+    <script>
+        const ESP32_IP = '192.168.4.1';
+        const form = document.getElementById('configForm');
+        const statusDiv = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // Check if we're connected to ESP32
+        async function checkConnection() {
+            try {
+                const response = await fetch(`http://${ESP32_IP}/`, { 
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                });
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+        
+        // Send configuration to ESP32
+        async function configureESP32(config) {
+            const attempts = [];
+            
+            // Try different formats
+            attempts.push(
+                // JSON format
+                fetch(`http://${ESP32_IP}/set_wifi`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ssid: config.ssid,
+                        password: config.password
+                    }),
+                    mode: 'no-cors'
+                }),
+                
+                // Form data
+                fetch(`http://${ESP32_IP}/set_wifi`, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    mode: 'no-cors'
+                }),
+                
+                // URL parameters
+                fetch(`http://${ESP32_IP}/set_wifi?ssid=${encodeURIComponent(config.ssid)}&password=${encodeURIComponent(config.password)}`, {
+                    method: 'GET',
+                    mode: 'no-cors'
+                })
+            );
+            
+            // Send token if provided
+            if (config.token) {
+                attempts.push(
+                    fetch(`http://${ESP32_IP}/set_token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: config.token }),
+                        mode: 'no-cors'
+                    }),
+                    
+                    fetch(`http://${ESP32_IP}/set_token?token=${encodeURIComponent(config.token)}`, {
+                        method: 'GET',
+                        mode: 'no-cors'
+                    })
+                );
+            }
+            
+            await Promise.allSettled(attempts);
+        }
+        
+        // Show status message
+        function showStatus(message, type = 'info') {
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+        }
+        
+        // Handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const config = {
+                ssid: document.getElementById('ssid').value,
+                password: document.getElementById('password').value,
+                token: document.getElementById('token').value
+            };
+            
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span>Configuring...';
+            
+            try {
+                // Check connection first
+                showStatus('Checking ESP32 connection...', 'info');
+                const connected = await checkConnection();
+                
+                if (!connected) {
+                    showStatus('⚠️ Cannot reach ESP32. Make sure you are connected to ESP32_AP_Config WiFi network.', 'error');
+                    return;
+                }
+                
+                // Send configuration
+                showStatus('Sending configuration to ESP32...', 'info');
+                await configureESP32(config);
+                
+                // Show success message
+                showStatus(`
+                    ✅ Configuration sent successfully!<br><br>
+                    <strong>What happens next:</strong><br>
+                    • ESP32 will restart and connect to "${config.ssid}"<br>
+                    • The blue LED will stop blinking when connected<br>
+                    • You can close this page and reconnect to your regular WiFi<br>
+                    • Check TanaMind dashboard in a few minutes
+                `, 'success');
+                
+            } catch (error) {
+                showStatus(`❌ Configuration failed: ${error.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Configure ESP32';
+            }
+        });
+        
+        // Check connection on load
+        window.addEventListener('load', async () => {
+            const connected = await checkConnection();
+            if (!connected) {
+                showStatus('⚠️ Not connected to ESP32. Please connect to ESP32_AP_Config WiFi network first.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

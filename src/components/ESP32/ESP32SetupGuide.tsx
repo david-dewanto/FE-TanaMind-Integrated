@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Smartphone, Wifi, Shield, CheckCircle, ExternalLink } from 'lucide-react';
+import { AlertCircle, Smartphone, Wifi, Shield, CheckCircle, ExternalLink, Download } from 'lucide-react';
 
 interface ESP32SetupGuideProps {
   isProduction: boolean;
@@ -30,50 +30,86 @@ const ESP32SetupGuide: React.FC<ESP32SetupGuideProps> = ({ isProduction, onClose
           </p>
 
           <div className="space-y-3">
-            {/* Option 1: Mobile App */}
+            {/* Option 1: Quick Setup Link */}
             <div className="bg-white rounded-md p-3 border border-amber-100">
               <div className="flex items-start gap-2">
-                <Smartphone className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <Wifi className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <h5 className="text-sm font-medium text-gray-900">
-                    Recommended: Use Mobile App
+                    Option 1: Quick Setup (Easiest)
                   </h5>
                   <p className="text-xs text-gray-600 mt-1">
-                    Download the TanaMind mobile app for seamless ESP32 setup without security restrictions.
+                    Connect to ESP32 WiFi, then click the button below:
                   </p>
+                  <div className="flex gap-2 mt-2">
+                    <a
+                      href="http://192.168.4.1"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
+                    >
+                      Open ESP32
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <a
+                      href="/esp32-setup.html"
+                      download="tanamind-esp32-setup.html"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white text-xs rounded-md hover:bg-gray-700"
+                    >
+                      Download Setup Tool
+                      <Download className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Option 2: Local Network */}
+            {/* Option 2: Copy Credentials */}
             <div className="bg-white rounded-md p-3 border border-amber-100">
               <div className="flex items-start gap-2">
-                <Wifi className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <Shield className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <h5 className="text-sm font-medium text-gray-900">
-                    Alternative: Local Network Setup
-                  </h5>
-                  <ol className="text-xs text-gray-600 mt-1 space-y-1">
-                    <li>1. Connect your computer to the ESP32 WiFi network</li>
-                    <li>2. Access the app locally at <code className="bg-gray-100 px-1 rounded">http://localhost:5173</code></li>
-                    <li>3. Complete the setup process</li>
-                    <li>4. Switch back to your regular WiFi</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-
-            {/* Option 3: Manual Setup */}
-            <div className="bg-white rounded-md p-3 border border-amber-100">
-              <div className="flex items-start gap-2">
-                <Shield className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h5 className="text-sm font-medium text-gray-900">
-                    Advanced: Manual Configuration
+                    Option 2: Copy Configuration
                   </h5>
                   <p className="text-xs text-gray-600 mt-1">
-                    Connect to ESP32 AP and visit <code className="bg-gray-100 px-1 rounded">http://192.168.4.1</code> 
-                    directly to configure WiFi settings.
+                    Copy your WiFi credentials and auth token to manually configure:
+                  </p>
+                  <button
+                    onClick={() => {
+                      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                      const config = {
+                        ssid: prompt('Enter your WiFi network name:'),
+                        password: prompt('Enter your WiFi password:'),
+                        token: token,
+                        server: 'https://automatic-watering-system.web.id'
+                      };
+                      
+                      if (config.ssid && config.password) {
+                        const configText = JSON.stringify(config, null, 2);
+                        navigator.clipboard.writeText(configText);
+                        alert('Configuration copied to clipboard! Paste it in the ESP32 setup page.');
+                      }
+                    }}
+                    className="mt-2 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700"
+                  >
+                    Generate Config
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Option 3: Mobile Browser */}
+            <div className="bg-white rounded-md p-3 border border-amber-100">
+              <div className="flex items-start gap-2">
+                <Smartphone className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h5 className="text-sm font-medium text-gray-900">
+                    Option 3: Use Mobile Browser
+                  </h5>
+                  <p className="text-xs text-gray-600 mt-1">
+                    On your phone: Connect to ESP32 WiFi, open any browser, and go to 
+                    <code className="bg-gray-100 px-1 rounded">192.168.4.1</code>
                   </p>
                 </div>
               </div>

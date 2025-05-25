@@ -251,6 +251,44 @@ export const sendTokenToESP32 = async (
 };
 
 /**
+ * Use backend proxy for ESP32 communication in production
+ */
+const useESP32Proxy = async (
+  action: 'configure' | 'status' | 'token',
+  data?: any,
+  deviceIp: string = ESP32_AP_CONFIG.defaultIp
+): Promise<any> => {
+  const isProduction = window.location.protocol === 'https:';
+  
+  // Only use proxy in production
+  if (!isProduction) {
+    return null; // Return null to indicate direct communication should be used
+  }
+  
+  try {
+    const url = `/api/esp32-proxy?action=${action}&deviceIp=${deviceIp}`;
+    
+    const response = await fetch(url, {
+      method: data ? 'POST' : 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || `Proxy request failed with status ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    esp32DebugLog('ESP32 proxy error:', error, 'error');
+    throw error;
+  }
+};
+
+/**
  * Configure ESP32 with WiFi credentials
  * @param credentials WiFi credentials (SSID and password)
  * @returns ESP32ConnectionResponse
@@ -275,8 +313,24 @@ export const configureESP32WiFi = async (
     
     // Check if we're in production (HTTPS)
     const isProduction = window.location.protocol === 'https:';
+    
+    // Try using proxy in production
     if (isProduction) {
-      esp32DebugLog('⚠️ Production environment detected. Direct ESP32 communication may be blocked by browser security.', null, 'warn');
+      esp32DebugLog('Using backend proxy for ESP32 communication in production');
+      
+      try {
+        const proxyResult = await useESP32Proxy('configure', credentials, deviceIp);
+        
+        if (proxyResult && proxyResult.success) {
+          return {
+            success: true,
+            message: 'WiFi credentials sent via secure proxy',
+            deviceId: ESP32_AP_CONFIG.deviceId
+          };
+        }
+      } catch (error) {
+        esp32DebugLog('Proxy method failed, will try direct communication as fallback', error, 'warn');
+      }
     }
     
     // First verify we can reach the ESP32, unless skipConnectionCheck is true
