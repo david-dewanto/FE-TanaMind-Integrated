@@ -8,7 +8,6 @@ interface ESP32SetupGuideProps {
 }
 
 const ESP32SetupGuide: React.FC<ESP32SetupGuideProps> = ({ isProduction, onClose }) => {
-  if (!isProduction) return null;
 
   const handleDownloadSetupTool = () => {
     // Get the auth token from storage
@@ -40,8 +39,8 @@ const ESP32SetupGuide: React.FC<ESP32SetupGuideProps> = ({ isProduction, onClose
             ESP32 Setup Required
           </h4>
           
-          <p className="text-sm text-amber-800 mb-3">
-            For security reasons, you need to use our offline setup tool to configure your ESP32 device.
+          <p className="text-sm text-amber-800 mb-3 text-justify">
+            Use our offline setup tool to configure your ESP32 device easily and securely.
           </p>
 
           {/* Single method: Download setup tool */}
@@ -53,26 +52,26 @@ const ESP32SetupGuide: React.FC<ESP32SetupGuideProps> = ({ isProduction, onClose
                   Download Setup Tool
                 </h5>
                 
-                <ol className="text-xs text-gray-600 space-y-2 mb-3">
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-1">1.</span>
-                    Click the button below to download the setup tool
+                <ol className="text-xs text-gray-600 space-y-2 mb-3 list-none">
+                  <li className="flex">
+                    <span className="font-semibold mr-2 flex-shrink-0">1.</span>
+                    <span>Click the button below to download the setup tool</span>
                   </li>
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-1">2.</span>
-                    Connect to <strong>ESP32_AP_Config</strong> WiFi network
+                  <li className="flex">
+                    <span className="font-semibold mr-2 flex-shrink-0">2.</span>
+                    <span>Connect to <strong>ESP32_AP_Config</strong> WiFi network</span>
                   </li>
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-1">3.</span>
-                    Open the downloaded HTML file in your browser
+                  <li className="flex">
+                    <span className="font-semibold mr-2 flex-shrink-0">3.</span>
+                    <span>Open the downloaded HTML file in your browser</span>
                   </li>
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-1">4.</span>
-                    Enter your WiFi credentials and click Configure
+                  <li className="flex">
+                    <span className="font-semibold mr-2 flex-shrink-0">4.</span>
+                    <span>Enter your WiFi credentials and click Configure</span>
                   </li>
-                  <li className="flex items-start">
-                    <span className="font-semibold mr-1">5.</span>
-                    Close the page and return to TanaMind to add plants
+                  <li className="flex">
+                    <span className="font-semibold mr-2 flex-shrink-0">5.</span>
+                    <span>Close the page and return to TanaMind to add plants</span>
                   </li>
                 </ol>
                 
@@ -88,15 +87,15 @@ const ESP32SetupGuide: React.FC<ESP32SetupGuideProps> = ({ isProduction, onClose
                 <div className="mt-3 pt-3 border-t border-amber-100">
                   <div className="flex items-start gap-2 text-xs text-gray-600">
                     <CheckCircle className="w-3 h-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Your authentication token is automatically included</span>
+                    <span className="text-justify">Your authentication token is automatically included</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs text-gray-600 mt-1">
                     <CheckCircle className="w-3 h-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Works offline - no internet needed during setup</span>
+                    <span className="text-justify">Works offline - no internet needed during setup</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs text-gray-600 mt-1">
                     <CheckCircle className="w-3 h-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>No security restrictions - direct ESP32 communication</span>
+                    <span className="text-justify">No security restrictions - direct ESP32 communication</span>
                   </div>
                 </div>
               </div>
@@ -109,11 +108,11 @@ const ESP32SetupGuide: React.FC<ESP32SetupGuideProps> = ({ isProduction, onClose
               <Wifi className="w-3 h-3" />
               Important Notes:
             </h5>
-            <ul className="text-xs text-amber-800 space-y-1">
-              <li>• Make sure your WiFi is 2.4GHz (ESP32 doesn't support 5GHz)</li>
-              <li>• The ESP32's blue LED will stop blinking when connected</li>
-              <li>• After setup, reconnect to your regular WiFi network</li>
-              <li>• Add plants in TanaMind to start recording sensor data</li>
+            <ul className="text-xs text-amber-800 space-y-1 list-disc list-inside">
+              <li>Make sure your WiFi is 2.4GHz (ESP32 doesn't support 5GHz)</li>
+              <li>The ESP32's blue LED will stop blinking when connected</li>
+              <li>After setup, reconnect to your regular WiFi network</li>
+              <li>Add plants in TanaMind to start recording sensor data</li>
             </ul>
           </div>
 

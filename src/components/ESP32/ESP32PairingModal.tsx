@@ -25,9 +25,6 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
   const [password, setPassword] = useState('');
   const [savedNetworks, setSavedNetworks] = useState<string[]>([]);
   
-  // Check if we're in production (HTTPS)
-  const isProduction = window.location.protocol === 'https:';
-  
   // Load saved networks on component mount (no ESP32 communication)
   useEffect(() => {
     // Try to load saved networks from localStorage
@@ -399,86 +396,8 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
       case 'idle':
         return (
           <div className="space-y-4 pb-2">
-            {/* Show setup guide for production environments */}
-            {isProduction && (
-              <ESP32SetupGuide isProduction={isProduction} />
-            )}
-            
-            <div className="bg-blue-50 p-4 rounded-md">
-              <h3 className="font-medium text-blue-700 mb-2 flex items-center">
-                <Wifi className="mr-2" size={18} />
-                Connect to ESP32
-              </h3>
-              <p className="text-sm text-blue-600">
-                To get started, make sure your ESP32 device is powered on. Look for the WiFi network 
-                named <strong>"ESP32_AP_Config"</strong> and connect your device to this network.
-              </p>
-              <p className="text-sm text-blue-600 mt-2">
-                The blue LED on your ESP32 should be flashing when it's in configuration mode.
-              </p>
-              <div className="mt-3 flex space-x-2">
-                <button
-                  onClick={() => {
-                    alert('Step 1: Go to your device WiFi settings\nStep 2: Connect to "ESP32_AP_Config" network\nStep 3: Return to this app and proceed with setup');
-                  }}
-                  className="px-3 py-1.5 border border-blue-400 text-blue-700 rounded-md text-sm hover:bg-blue-50 flex items-center"
-                >
-                  <HelpCircle size={16} className="mr-1" />
-                  Need Help?
-                </button>
-              </div>
-              
-              <div className="mt-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <h4 className="text-sm font-medium text-amber-800 mb-2">Important Information</h4>
-                <p className="text-xs text-amber-700 mb-2">
-                  Make sure your device is connected to the <strong>ESP32_AP_Config</strong> WiFi network before proceeding.
-                </p>
-                <p className="text-xs text-amber-700 mb-2">
-                  <strong>Warning:</strong> If you enter incorrect WiFi credentials, the ESP32 may report success but won't actually connect to your network. Double-check your WiFi name and password.
-                </p>
-                <p className="text-xs text-amber-700">
-                  2.4GHz WiFi networks are required, as ESP32 doesn't support 5GHz networks.
-                </p>
-              </div>
-            </div>
-            
-            <form onSubmit={configureESP32} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  WiFi Network Name (SSID)
-                </label>
-                <input
-                  type="text"
-                  value={ssid}
-                  onChange={(e) => setSsid(e.target.value)}
-                  placeholder="Enter your WiFi network name"
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  WiFi Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your WiFi password"
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="w-full p-2 bg-[#0B9444] text-white rounded-md hover:bg-[#056526] flex items-center justify-center"
-                >
-                  <Zap size={16} className="mr-2" />
-                  Configure ESP32
-                </button>
-              </div>
-            </form>
+            {/* Show the setup guide */}
+            <ESP32SetupGuide isProduction={true} />
           </div>
         );
         
@@ -671,21 +590,21 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
               <CheckCircle size={32} className="text-green-600" />
             </div>
             <h3 className="text-lg font-medium text-gray-900">Successfully Paired!</h3>
-            <p className="mt-2 text-gray-600 text-center">
+            <p className="mt-2 text-gray-600 text-center text-justify px-4">
               Your ESP32 device <strong>(ID: {deviceId})</strong> has been successfully configured.
             </p>
             {/* Automatic Watering Notification */}
-            <div className="mt-4 bg-green-50 p-4 rounded-md w-full max-w-sm border border-green-200">
+            <div className="mt-4 bg-green-50 p-4 rounded-md w-full max-w-lg border border-green-200">
               <div className="flex items-center mb-2">
                 <CheckCircle size={16} className="text-green-600 mr-2" />
                 <h4 className="font-semibold text-green-800 text-sm">Automatic Watering Enabled</h4>
               </div>
-              <p className="text-sm text-green-700">
+              <p className="text-sm text-green-700 text-justify">
                 Your ESP32 device will automatically water your plants when soil moisture drops below the optimal threshold. No manual configuration needed!
               </p>
             </div>
 
-            <div className="mt-4 bg-blue-50 p-4 rounded-md w-full max-w-sm">
+            <div className="mt-4 bg-blue-50 p-4 rounded-md w-full max-w-lg">
               <h4 className="font-medium text-blue-700 text-sm">What happens next:</h4>
               <ul className="mt-2 text-sm text-blue-600 list-disc pl-5 space-y-1">
                 <li>The ESP32 is now connecting to your WiFi network "{ssid}"</li>
@@ -694,9 +613,9 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
                 <li>Receive notifications about your plant's health and watering events</li>
               </ul>
             </div>
-            <div className="mt-4 bg-amber-50 p-4 rounded-md w-full max-w-sm">
+            <div className="mt-4 bg-amber-50 p-4 rounded-md w-full max-w-lg">
               <h4 className="font-medium text-amber-700 text-sm">Important Note:</h4>
-              <p className="mt-1 text-sm text-amber-600">
+              <p className="mt-1 text-sm text-amber-600 text-justify">
                 If your device is not appearing in the dashboard after a few minutes, you may need to:
               </p>
               <ul className="mt-2 text-sm text-amber-700 list-disc pl-5 space-y-1">
@@ -723,11 +642,11 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
               <AlertCircle size={32} className="text-red-600" />
             </div>
             <h3 className="text-lg font-medium text-gray-900">Connection Failed</h3>
-            <p className="mt-2 text-red-600 text-center">
+            <p className="mt-2 text-red-600 text-center text-justify px-4">
               {error || 'Failed to connect to the ESP32 device.'}
             </p>
             
-            <div className="mt-4 bg-amber-50 p-4 rounded-md w-full max-w-sm">
+            <div className="mt-4 bg-amber-50 p-4 rounded-md w-full max-w-lg">
               <h4 className="font-medium text-amber-700 text-sm">Troubleshooting steps:</h4>
               <ul className="mt-2 text-sm text-amber-800 list-disc pl-5 space-y-1.5">
                 <li>Make sure your ESP32 device is powered on (LED should be on)</li>
@@ -763,7 +682,7 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
       {/* Container with proper positioning */}
       <div className="absolute inset-x-0 top-0 w-full h-full flex flex-col sm:p-4 sm:items-center sm:justify-center">
         {/* Modal for all screen sizes */}
-        <div className="flex flex-col bg-white rounded-none sm:rounded-lg shadow-xl w-full h-full sm:h-auto sm:max-w-md sm:max-h-[calc(100vh-40px)] overflow-hidden">
+        <div className="flex flex-col bg-white rounded-none sm:rounded-lg shadow-xl w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[calc(100vh-40px)] overflow-hidden">
           {/* Top spacing div on mobile - increased height for more space */}
           <div className="h-[80px] sm:hidden flex-shrink-0"></div>
         {/* Fixed header - NOT sticky */}

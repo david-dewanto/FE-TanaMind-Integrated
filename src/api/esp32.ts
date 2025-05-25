@@ -273,15 +273,12 @@ export const configureESP32WiFi = async (
       };
     }
     
-    // Check if we're in production (HTTPS)
-    const isProduction = window.location.protocol === 'https:';
-    if (isProduction) {
-      esp32DebugLog('⚠️ Production environment detected. Please use the offline setup tool for ESP32 configuration.', null, 'warn');
-      return {
-        success: false,
-        message: 'Please use the offline setup tool to configure your ESP32 device. Download it from the ESP32 setup guide.'
-      };
-    }
+    // Always recommend using the offline setup tool for better user experience
+    esp32DebugLog('⚠️ Please use the offline setup tool for ESP32 configuration.', null, 'warn');
+    return {
+      success: false,
+      message: 'Please use the offline setup tool to configure your ESP32 device. Download it from the ESP32 setup guide.'
+    };
     
     // First verify we can reach the ESP32, unless skipConnectionCheck is true
     if (!skipConnectionCheck) {
