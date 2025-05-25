@@ -21,8 +21,6 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
   const [token, setToken] = useState<string | null>(null);
   
   // Form fields
-  const [ssid, setSsid] = useState('');
-  const [password, setPassword] = useState('');
   const [savedNetworks, setSavedNetworks] = useState<string[]>([]);
   
   // Load saved networks on component mount (no ESP32 communication)
@@ -272,106 +270,12 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
     }, 1000); // Check every 1 second
   };
 
-  // Function to send WiFi credentials to ESP32
-  const configureESP32 = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!ssid.trim()) {
-      setError('Please enter your WiFi network name (SSID)');
-      return;
-    }
-    
-    if (!password.trim()) {
-      setError('Please enter your WiFi password');
-      return;
-    }
-    
-    // Move directly to configuration step
-    setStatus('configuring');
-    
-    // Get authentication token (will be stored in the app for later use)
-    const authToken = await getAuthToken();
-    if (!authToken) {
-      setError('Failed to get authentication token. Please make sure you are logged in.');
-      return;
-    }
-    
-    setToken(authToken);
-    setError(null);
-    
-    try {
-      const credentials: ESP32WiFiCredentials = { ssid, password };
-      
-      console.log('Sending WiFi credentials to ESP32...');
-      
-      try {
-        // Make a direct fetch call to the ESP32
-        const response = await fetch('http://192.168.4.1/set_wifi', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials),
-          mode: 'no-cors', // Important to prevent CORS issues
-        });
-        
-        console.log('WiFi config direct response:', response);
-        
-        // With no-cors mode, we can't actually read the response status
-        // But if we got this far without an error, it likely succeeded
-        
-        // Save this network for future use
-        saveNetwork(ssid);
-        
-        // Set device ID
-        const deviceId = 'fern_device_001';
-        setDeviceId(deviceId);
-        
-        // IMPORTANT: Send token immediately after WiFi credentials, before WiFi connection attempt
-        console.log('Immediately sending token to ESP32 after WiFi credentials...');
-        const tokenSent = await sendAuthToken();
-        if (tokenSent) {
-          console.log('✅ Token successfully sent to ESP32 in AP mode');
-        } else {
-          console.warn('⚠️ Failed to send token to ESP32 in AP mode, will retry after WiFi connection');
-        }
-        
-        // Start polling for WiFi connection
-        pollForESP32WiFiConnection();
-      } catch (fetchError) {
-        console.error('Error sending WiFi config directly:', fetchError);
-        
-        // Fall back to the API method
-        const response = await esp32.configureESP32WiFi(credentials, "192.168.4.1", true);
-        
-        if (response.success) {
-          // Save this network for future use
-          saveNetwork(ssid);
-          
-          // Set device ID
-          const deviceId = 'fern_device_001';
-          setDeviceId(deviceId);
-          
-          // IMPORTANT: Send token immediately after WiFi credentials in the fallback path too
-          console.log('Fallback path: Immediately sending token to ESP32 after WiFi credentials...');
-          const tokenSent = await sendAuthToken();
-          if (tokenSent) {
-            console.log('✅ Fallback: Token successfully sent to ESP32 in AP mode');
-          } else {
-            console.warn('⚠️ Fallback: Failed to send token to ESP32 in AP mode, will retry after WiFi connection');
-          }
-          
-          // Start polling for WiFi connection
-          pollForESP32WiFiConnection();
-        } else {
-          throw new Error(response.message || 'Failed to send WiFi credentials');
-        }
-      }
-    } catch (err) {
-      console.error('Failed to configure ESP32:', err);
-      setError(err instanceof Error ? err.message : 'Failed to configure ESP32 device');
-      setStatus('error');
-    }
+  // Simplified function to handle ESP32 setup completion
+  const handleSetupComplete = () => {
+    // Set device ID when user indicates setup is complete
+    const deviceId = 'fern_device_001';
+    setDeviceId(deviceId);
+    setStatus('success');
   };
   
   // Function to retry the connection
@@ -399,45 +303,29 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
             {/* Show the setup guide */}
             <ESP32SetupGuide isProduction={true} />
             
-            {/* WiFi Configuration Form */}
-            <form onSubmit={configureESP32} className="mt-6 space-y-4">
-              <div>
-                <label htmlFor="ssid" className="block text-sm font-medium text-gray-700 mb-1">
-                  WiFi Network Name (SSID) *
-                </label>
-                <input
-                  id="ssid"
-                  type="text"
-                  value={ssid}
-                  onChange={(e) => setSsid(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent"
-                  placeholder="Your WiFi network name"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  WiFi Password *
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}  
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent"
-                  placeholder="Your WiFi password"
-                  required
-                />
-              </div>
-              
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-[#0B9444] text-white rounded-md hover:bg-[#056526] font-medium"
-              >
-                Configure WiFi
-              </button>
-            </form>
+            {/* Instructions to use the setup tool */}
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-medium text-blue-800 mb-2">Ready to configure your ESP32?</h4>
+              <p className="text-sm text-blue-700 mb-3">
+                Please use the ESP32 Setup Tool to configure your device. The tool will handle:
+              </p>
+              <ul className="text-sm text-blue-700 list-disc list-inside space-y-1 mb-3">
+                <li>WiFi network configuration</li>
+                <li>Authentication token setup</li>
+                <li>Device pairing with your account</li>
+              </ul>
+              <p className="text-sm text-blue-600 font-medium">
+                Once configured, your device ID will appear here automatically.
+              </p>
+            </div>
+            
+            {/* Button to indicate setup is complete */}
+            <button
+              onClick={handleSetupComplete}
+              className="w-full px-4 py-2 bg-[#0B9444] text-white rounded-md hover:bg-[#056526] font-medium"
+            >
+              I've Configured My ESP32
+            </button>
           </div>
         );
         
@@ -580,8 +468,8 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
                     <div>
                       <p className="text-sm font-medium text-blue-900 mb-1">WiFi Configuration</p>
                       <p className="text-xs text-blue-700">
-                        Sending credentials to <strong>"{ssid}"</strong> network.<br/>
-                        ESP32 will restart and connect to your WiFi.
+                        Configuring your ESP32 device.<br/>
+                        The device will restart and connect to your WiFi.
                       </p>
                     </div>
                   </div>
@@ -596,7 +484,7 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
                     <div>
                       <p className="text-sm font-medium text-amber-900 mb-1">Network Verification</p>
                       <p className="text-xs text-amber-700">
-                        ESP32 connecting to <strong>"{ssid}"</strong>. This may take up to 30 seconds.<br/>
+                        ESP32 connecting to your WiFi network. This may take up to 30 seconds.<br/>
                         <span className="font-medium">Stay connected to ESP32_AP_Config network.</span>
                       </p>
                     </div>
@@ -647,7 +535,7 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
             <div className="mt-4 bg-blue-50 p-4 rounded-md w-full max-w-lg">
               <h4 className="font-medium text-blue-700 text-sm">What happens next:</h4>
               <ul className="mt-2 text-sm text-blue-600 list-disc pl-5 space-y-1">
-                <li>The ESP32 is now connecting to your WiFi network "{ssid}"</li>
+                <li>The ESP32 is now connecting to your WiFi network</li>
                 <li>Once connected, sensor data will begin transmitting to your TanaMind account</li>
                 <li>You can view real-time sensor data in the Dashboard</li>
                 <li>Receive notifications about your plant's health and watering events</li>

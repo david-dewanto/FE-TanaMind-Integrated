@@ -164,7 +164,8 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
   const handleESP32PairingSuccess = (deviceId: string) => {
     setFormData({
       ...formData,
-      device_id: deviceId
+      device_id: deviceId,
+      auto_watering_enabled: true // Automatically enable when ESP32 is paired
     });
     setShowEsp32Modal(false);
   };
@@ -950,25 +951,12 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-2 py-2">
-                          <input
-                            type="checkbox"
-                            id="auto_watering_enabled"
-                            name="auto_watering_enabled"
-                            checked={formData.auto_watering_enabled}
-                            onChange={handleInputChange}
-                            disabled={!formData.device_id}
-                            className="h-4 w-4 text-[#0B9444] rounded border-gray-300 focus:ring-[#0B9444] disabled:opacity-50"
-                          />
-                          <label 
-                            htmlFor="auto_watering_enabled" 
-                            className={`text-sm font-medium ${
-                              !formData.device_id ? 'text-gray-400' : 'text-gray-700'
-                            }`}
-                          >
-                            Enable automatic watering (requires connected device)
-                          </label>
-                        </div>
+                        {formData.device_id && (
+                          <div className="mt-2 bg-blue-50 p-3 rounded-md text-blue-700 text-sm">
+                            <Info size={16} className="inline mr-1.5" />
+                            Automatic watering will be enabled when the ESP32 device is connected and configured.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
