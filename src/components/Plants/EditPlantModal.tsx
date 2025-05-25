@@ -545,23 +545,26 @@ const EditPlantModal: React.FC<EditPlantModalProps> = ({ plant, onClose, onSucce
             {/* Step 3: Smart Features */}
             {step === 3 && (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Device ID (optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="device_id"
-                    value={formData.device_id}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    placeholder="e.g. ESP32_12345"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Enter your IoT device ID if you've set up a compatible device to monitor this plant. 
-                    Leave blank if you don't have a physical device.
-                  </p>
-                </div>
+                {formData.device_id && (
+                  <div className="bg-green-50 p-4 rounded-md">
+                    <h4 className="font-medium text-green-700 mb-1">ESP32 Device Connected</h4>
+                    <p className="text-sm text-green-600">
+                      Device ID: {formData.device_id}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-2">
+                      To change the device, please remove this plant and create a new one with the desired device.
+                    </p>
+                  </div>
+                )}
+                
+                {!formData.device_id && (
+                  <div className="bg-amber-50 p-4 rounded-md">
+                    <h4 className="font-medium text-amber-700 mb-1">No Device Connected</h4>
+                    <p className="text-sm text-amber-600">
+                      This plant is not connected to an ESP32 device. To add IoT monitoring, please create a new plant with device pairing.
+                    </p>
+                  </div>
+                )}
                 
                 <div className="bg-[#F3FFF6] p-4 rounded-md mt-4">
                   <h3 className="font-medium text-gray-700 mb-2">Smart Features Overview</h3>

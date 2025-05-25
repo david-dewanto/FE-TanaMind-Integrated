@@ -398,6 +398,46 @@ const ESP32PairingModal: React.FC<ESP32PairingModalProps> = ({ onClose, onSucces
           <div className="space-y-4 pb-2">
             {/* Show the setup guide */}
             <ESP32SetupGuide isProduction={true} />
+            
+            {/* WiFi Configuration Form */}
+            <form onSubmit={configureESP32} className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="ssid" className="block text-sm font-medium text-gray-700 mb-1">
+                  WiFi Network Name (SSID) *
+                </label>
+                <input
+                  id="ssid"
+                  type="text"
+                  value={ssid}
+                  onChange={(e) => setSsid(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent"
+                  placeholder="Your WiFi network name"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  WiFi Password *
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}  
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#39B54A] focus:border-transparent"
+                  placeholder="Your WiFi password"
+                  required
+                />
+              </div>
+              
+              <button
+                type="submit"
+                className="w-full px-4 py-2 bg-[#0B9444] text-white rounded-md hover:bg-[#056526] font-medium"
+              >
+                Configure WiFi
+              </button>
+            </form>
           </div>
         );
         

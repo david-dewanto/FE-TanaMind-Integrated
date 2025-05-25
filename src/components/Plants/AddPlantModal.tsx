@@ -925,7 +925,7 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                         <div className="flex flex-col space-y-2">
                           <div className="flex items-center justify-between">
                             <label className="block text-sm font-medium text-gray-700">
-                              ESP32 Device ID
+                              ESP32 Device
                             </label>
                             
                             <button
@@ -934,23 +934,9 @@ const AddPlantModal: React.FC<AddPlantModalProps> = ({ onClose, onSuccess }) => 
                               className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 flex items-center"
                             >
                               <Wifi size={14} className="mr-1.5" />
-                              Pair New Device
+                              {formData.device_id ? 'Change Device' : 'Pair New Device'}
                             </button>
                           </div>
-                          
-                          <input
-                            type="text"
-                            name="device_id"
-                            value={formData.device_id}
-                            onChange={handleInputChange}
-                            className={`w-full p-2 border rounded-md ${formErrors.device_id ? 'border-red-500' : 'border-gray-300'}`}
-                            placeholder="e.g. ESP32_12345"
-                            readOnly={true}
-                          />
-                          
-                          {formErrors.device_id && (
-                            <p className="mt-1 text-sm text-red-500">{formErrors.device_id}</p>
-                          )}
                           
                           {formData.device_id ? (
                             <div className="mt-2 bg-green-50 p-2 rounded-md text-green-700 text-sm flex items-center">

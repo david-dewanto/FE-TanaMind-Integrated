@@ -146,7 +146,6 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
       setDeviceId('');
       setDeviceIp('');
       setIsDeviceConnected(false);
-      setAutoWatering(false);
     } else {
       // Always set device type to ESP32 when enabling
       setDeviceType('ESP32');
@@ -858,7 +857,7 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
                   <div className="flex flex-col space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="block text-sm font-medium text-gray-700">
-                        ESP32 Device ID
+                        ESP32 Device
                       </label>
                       
                       <button
@@ -867,18 +866,9 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
                         className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 flex items-center"
                       >
                         <Wifi size={14} className="mr-1.5" />
-                        Pair New Device
+                        {deviceId ? 'Change Device' : 'Pair New Device'}
                       </button>
                     </div>
-                    
-                    <input
-                      type="text"
-                      value={deviceId}
-                      onChange={(e) => setDeviceId(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-2 focus:ring-[#39B54A] focus:border-transparent"
-                      placeholder="e.g. ESP32_12345"
-                      readOnly={true}
-                    />
                     
                     {deviceId ? (
                       <div className="mt-2 bg-green-50 p-2 rounded-md text-green-700 text-sm flex items-center">
@@ -901,24 +891,14 @@ const PlantForm: React.FC<PlantFormProps> = ({ plant, onClose, onSuccess }) => {
                     )}
                   </div>
                   
-                  <div className="mt-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id="autoWatering"
-                        type="checkbox"
-                        checked={autoWatering}
-                        onChange={(e) => setAutoWatering(e.target.checked)}
-                        disabled={!deviceId}
-                        className="h-4 w-4 text-[#0B9444] focus:ring-[#39B54A] border-gray-300 rounded disabled:opacity-50"
-                      />
-                      <label 
-                        htmlFor="autoWatering" 
-                        className={`text-sm font-medium ${deviceId ? 'text-gray-700' : 'text-gray-400'}`}
-                      >
-                        Enable automatic watering (requires connected device)
-                      </label>
+                  {deviceId && (
+                    <div className="mt-4 bg-blue-50 p-3 rounded-md">
+                      <p className="text-sm text-blue-700">
+                        <Info size={16} className="inline mr-1.5" />
+                        Automatic watering will be enabled when the ESP32 device is connected and configured.
+                      </p>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
