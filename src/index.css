@@ -110,6 +110,16 @@ ol li {
   margin-top: 1.75em !important;
 }
 
+/* Splash screen loading animation */
+@keyframes slideLoading {
+  0% { 
+    transform: translateX(-100%);
+  }
+  100% { 
+    transform: translateX(300%);
+  }
+}
+
 /* Enhanced AI Status Animations */
 @keyframes ai-status-pulse {
   0%, 100% { 
@@ -185,4 +195,80 @@ ol li {
 
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Splash Screen Animations */
+@keyframes leafFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-10px) rotate(5deg);
+  }
+  75% {
+    transform: translateY(5px) rotate(-5deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes leafGrow {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.5;
+  }
+}
+
+/* Gradient text animation for splash screen */
+.gradient-text-animate {
+  background: linear-gradient(
+    90deg,
+    #0B9444 0%,
+    #19CC66 25%,
+    #0B9444 50%,
+    #056526 75%,
+    #0B9444 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }

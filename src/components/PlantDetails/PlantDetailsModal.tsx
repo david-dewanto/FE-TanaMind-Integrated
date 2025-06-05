@@ -19,7 +19,7 @@ import {
 import { ESP32PairingModal } from '../ESP32';
 import SensorDataChart from './SensorDataChart';
 import { usePlants } from '../../contexts/PlantContext';
-import { LoadingSpinner, ErrorMessage } from '../common';
+import { LoadingSpinner, ErrorMessage, PlantImage } from '../common';
 import { formatDateUTC7, formatDateTimeUTC7 } from '../../utils/dateUtils';
 
 interface PlantDetailsModalProps {
@@ -178,20 +178,13 @@ const PlantDetailsModal: React.FC<PlantDetailsModalProps> = ({
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-1">
-                <div className="relative bg-gray-100 rounded-lg overflow-hidden h-48 md:h-56">
-                  {plant.image ? (
-                    <img 
-                      src={plant.image} 
-                      alt={plant.nickname} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full bg-gray-50">
-                      <svg className="w-24 h-24 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M15.5 9.63a7 7 0 00-7.07-6.61 7.14 7.14 0 00-6.91 8.58 6.71 6.71 0 005.24 5.65v3.75h5v-4h.07A5.5 5.5 0 0017 11.5a5.55 5.55 0 00-1.5-1.87M12.5 15L11 13.5 12.5 12a2 2 0 10-2.83-2.83L8 10.83l-1.67-1.66A2 2 0 103.5 12L5 13.5 3.5 15a2 2 0 102.83 2.83L8 16.17l1.67 1.66a2 2 0 002.83-2.83" />
-                      </svg>
-                    </div>
-                  )}
+                <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square md:aspect-[4/3]">
+                  <PlantImage 
+                    plantName={localPlant.actualName || localPlant.nickname} 
+                    species={localPlant.species}
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                    fallbackImage={plant.image}
+                  />
                 </div>
 
                 <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4">

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { plants } from '../api';
 import { Plant, PlantWithLatestReadings, PlantRequest, WaterPlantRequest } from '../api/plants';
 import { getCurrentDateUTC7, calculateNextWateringDateUTC7 } from '../utils/dateUtils';
+import { getPlantImage } from '../api/images';
 
 interface PlantContextType {
   plants: Plant[];

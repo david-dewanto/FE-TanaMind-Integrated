@@ -84,15 +84,23 @@ const PlantAnalysisCard: React.FC<PlantAnalysisCardProps> = ({ recommendation, o
         )}
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="text-xs text-gray-500">
-            Confidence: {recommendation.confidenceScore}%
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                recommendation.confidenceScore >= 80 ? 'bg-green-500' :
+                recommendation.confidenceScore >= 60 ? 'bg-yellow-500' : 'bg-orange-500'
+              }`}></div>
+              <span className="text-xs text-gray-500">
+                {recommendation.confidenceScore}% confident
+              </span>
+            </div>
           </div>
           <button
             onClick={() => onChat(recommendation.plantId)}
-            className="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+            className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
           >
-            <MessageCircle size={14} />
-            Ask AI
+            <MessageCircle size={16} className="group-hover:animate-pulse" />
+            <span className="font-medium">Ask AI</span>
           </button>
         </div>
       </div>
@@ -103,11 +111,11 @@ const PlantAnalysisCard: React.FC<PlantAnalysisCardProps> = ({ recommendation, o
 interface ChatInterfaceProps {
   activePlantId: number | null;
   onClose: () => void;
+  plants: Plant[];
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose, plants }) => {
   const { state, sendChatMessage, clearChatHistory } = useAIAnalytics();
-  const { plants } = usePlants();
   const [message, setMessage] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -213,12 +221,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose })
                 <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
               )}
             </h3>
-            {activePlant && (
-              <p className="text-sm text-gray-600 flex items-center gap-1">
-                <Leaf size={12} className="text-green-500" />
-                Chatting about {activePlant.nickname}
-              </p>
-            )}
+            <p className="text-sm text-gray-600 flex items-center gap-1">
+              <Leaf size={12} className="text-green-500" />
+              {activePlant ? `Chatting about ${activePlant.nickname}` : `Chatting about all ${plants.length} plants`}
+            </p>
           </div>
         </div>
         
@@ -285,25 +291,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePlantId, onClose })
                 <div className="w-full max-w-sm space-y-2">
                   <p className="text-xs font-medium text-gray-500 mb-3">Quick questions:</p>
                   <button
-                    onClick={() => setMessage(activePlant ? `How is ${activePlant.nickname} doing?` : "How do I care for my plants?")}
+                    onClick={() => setMessage(activePlant ? `How is ${activePlant.nickname} doing?` : "How are all my plants doing today?")}
                     className="w-full text-left px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-green-50 hover:to-green-100 rounded-lg text-sm text-gray-700 transition-all duration-200 group"
                   >
                     <Sparkles size={14} className="inline mr-2 text-yellow-500 group-hover:rotate-180 transition-transform" />
-                    {activePlant ? `How is ${activePlant.nickname} doing?` : "How do I care for my plants?"}
+                    {activePlant ? `How is ${activePlant.nickname} doing?` : "How are all my plants doing today?"}
                   </button>
                   <button
-                    onClick={() => setMessage(activePlant ? `When should I water ${activePlant.nickname}?` : "What are signs of overwatering?")}
+                    onClick={() => setMessage(activePlant ? `When should I water ${activePlant.nickname}?` : "Which plants need watering soon?")}
                     className="w-full text-left px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 rounded-lg text-sm text-gray-700 transition-all duration-200 group"
                   >
                     <Droplets size={14} className="inline mr-2 text-blue-500 group-hover:scale-125 transition-transform" />
-                    {activePlant ? `When should I water ${activePlant.nickname}?` : "What are signs of overwatering?"}
+                    {activePlant ? `When should I water ${activePlant.nickname}?` : "Which plants need watering soon?"}
                   </button>
                   <button
-                    onClick={() => setMessage(activePlant ? `Any care tips for ${activePlant.nickname}?` : "How much light do plants need?")}
+                    onClick={() => setMessage(activePlant ? `Any care tips for ${activePlant.nickname}?` : "Which plants need the most attention?")}
                     className="w-full text-left px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-yellow-50 hover:to-yellow-100 rounded-lg text-sm text-gray-700 transition-all duration-200 group"
                   >
                     <Sun size={14} className="inline mr-2 text-yellow-500 group-hover:animate-pulse" />
-                    {activePlant ? `Any care tips for ${activePlant.nickname}?` : "How much light do plants need?"}
+                    {activePlant ? `Any care tips for ${activePlant.nickname}?` : "Which plants need the most attention?"}
                   </button>
                 </div>
               </div>
@@ -713,6 +719,7 @@ const Analytics: React.FC = () => {
           <ChatInterface
             activePlantId={state.activeChatPlant}
             onClose={handleCloseChat}
+            plants={plants}
           />
         </div>
       </div>

@@ -60,7 +60,7 @@ export const apiToUiPlant = (apiPlant: APIPLant): UIPlant => {
       },
     },
     iotIntegration: {
-      deviceId: apiPlant.device_id || apiPlant.id.toString(),
+      deviceId: apiPlant.device_id || '',
       autoWateringEnabled: apiPlant.auto_watering_enabled || false,
       lastWatered: apiPlant.last_watered || null,
       healthStatus: healthStatus,

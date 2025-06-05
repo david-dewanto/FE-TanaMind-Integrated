@@ -26,6 +26,7 @@ import { SensorProvider } from './contexts/SensorContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { AIAnalyticsProvider } from './contexts/AIAnalyticsContext';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import SplashScreen from './components/SplashScreen';
 
 // Lazy load offline functionality components
 const OfflineAlert = React.lazy(() => import('./components/OfflineAlert'));
@@ -33,6 +34,7 @@ const OfflineAlert = React.lazy(() => import('./components/OfflineAlert'));
 const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showSplash, setShowSplash] = useState(true);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -52,9 +54,26 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Hide the app shell once React is loaded
+  useEffect(() => {
+    const appShell = document.getElementById('app-shell');
+    if (appShell) {
+      appShell.style.display = 'none';
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
   return (
     <AuthProvider>
       <Router>
+        {/* Splash Screen - shows Lottie animation on first load */}
+        {showSplash && (
+          <SplashScreen onAnimationComplete={handleSplashComplete} />
+        )}
+        
         {/* PWA Install Prompt - shown on compatible devices/browsers */}
         <PWAInstallPrompt />
         

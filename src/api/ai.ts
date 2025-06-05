@@ -299,9 +299,15 @@ Format as JSON:
     message: string,
     plant?: Plant,
     latestReadings?: PlantWithLatestReadings,
-    context?: string
+    context?: string,
+    allPlants?: Plant[],
+    allPlantsReadings?: PlantWithLatestReadings[]
   ): string {
-    const plantContext = plant ? `
+    let contextInfo = '';
+
+    if (plant) {
+      // Single plant context
+      contextInfo = `
 You are helping with plant: ${plant.plant_name} (${plant.nickname})
 - Species: ${plant.species}
 - Category: ${plant.category}
@@ -316,17 +322,37 @@ Current Sensor Readings:
 - Air Humidity: ${latestReadings?.latest_air_humidity}% (Target: ${plant.air_humidity_threshold_min}-${plant.air_humidity_threshold_max}%)
 - Temperature: ${latestReadings?.latest_temperature}°C (Target: ${plant.temperature_threshold_min}-${plant.temperature_threshold_max}°C)
 - Luminance: ${latestReadings?.latest_luminance} lux (Target: ${plant.luminance_threshold_min}-${plant.luminance_threshold_max} lux)
-` : '';
+`;
+    } else if (allPlants && allPlants.length > 0) {
+      // All plants context
+      contextInfo = `
+You have access to data for all ${allPlants.length} plants:
+
+${allPlants.map((p, index) => {
+  const readings = allPlantsReadings?.find(r => r.plant_id === p.id);
+  return `
+${index + 1}. ${p.plant_name} (${p.nickname})
+   - Species: ${p.species}, Category: ${p.category}
+   - Location: ${p.location}
+   - Health Status: ${p.health_status}
+   - Last Watered: ${p.last_watered}
+   - Watering Frequency: Every ${p.watering_frequency} days
+   ${readings ? `- Current Readings: Soil ${readings.latest_soil_humidity}%, Temp ${readings.latest_temperature}°C, Light ${readings.latest_luminance} lux` : '- No recent readings'}`;
+}).join('\n')}
+
+You can answer questions about any of these plants, compare their conditions, or provide general plant care advice.
+`;
+    }
 
     return `You are TanaMind AI, an expert plant care assistant. You help users understand their plants' needs and provide actionable advice based on sensor data.
 
-${plantContext}
+${contextInfo}
 
 User Question: ${message}
 
 Context: ${context || 'general'}
 
-Please provide a helpful, concise response. Include specific actionable advice when possible. If suggesting actions, be specific about timing and methods.
+Please provide a helpful, concise response. Include specific actionable advice when possible. If suggesting actions, be specific about timing and methods. If the user asks about a specific plant by name, make sure to reference that plant in your response.
 
 Format as JSON:
 {
@@ -340,17 +366,42 @@ Format as JSON:
     try {
       let plant: Plant | undefined;
       let latestReadings: PlantWithLatestReadings | undefined;
+      let allPlants: Plant[] | undefined;
+      let allPlantsReadings: PlantWithLatestReadings[] | undefined;
 
       if (request.plantId) {
+        // Fetch specific plant data
         try {
           plant = await get<Plant>(`/api/plants/${request.plantId}`);
           latestReadings = await get<PlantWithLatestReadings>(`/api/plants/${request.plantId}/latest-readings`);
         } catch (error) {
           console.warn(`Failed to get plant data for chat context:`, error);
         }
+      } else {
+        // Fetch all plants data for general context
+        try {
+          allPlants = await get<Plant[]>('/api/plants');
+          if (allPlants && allPlants.length > 0) {
+            // Fetch latest readings for all plants
+            const readingsPromises = allPlants.map(p => 
+              get<PlantWithLatestReadings>(`/api/plants/${p.id}/latest-readings`).catch(() => null)
+            );
+            const readings = await Promise.all(readingsPromises);
+            allPlantsReadings = readings.filter((r): r is PlantWithLatestReadings => r !== null);
+          }
+        } catch (error) {
+          console.warn('Failed to get all plants data for chat context:', error);
+        }
       }
 
-      const prompt = this.createChatPrompt(request.message, plant, latestReadings, request.context);
+      const prompt = this.createChatPrompt(
+        request.message, 
+        plant, 
+        latestReadings, 
+        request.context,
+        allPlants,
+        allPlantsReadings
+      );
       const responseText = await this.callAI(prompt);
 
       try {

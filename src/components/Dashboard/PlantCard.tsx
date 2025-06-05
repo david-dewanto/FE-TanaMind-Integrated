@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plant } from '../../types';
 import { Droplets, Sun, Thermometer, Check, AlertTriangle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { ESP32StatusIndicator } from '../ESP32';
+import PlantImage from '../common/PlantImage';
 
 interface PlantCardProps {
   plant: Plant;
@@ -105,16 +106,15 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onClick, onEdit, onDelete 
       className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow relative"
     >
       <div 
-        className="h-40 bg-gray-200 relative cursor-pointer"
+        className="aspect-square bg-gray-200 relative cursor-pointer overflow-hidden"
         onClick={onClick}
       >
-        {plant.image && (
-          <img 
-            src={plant.image} 
-            alt={plant.nickname} 
-            className="w-full h-full object-cover"
-          />
-        )}
+        <PlantImage 
+          plantName={plant.actualName || plant.nickname} 
+          species={plant.species}
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          fallbackImage={plant.image}
+        />
         {plant.iotIntegration.healthStatus !== 'excellent' && plant.iotIntegration.healthStatus !== 'good' && (
           <div 
             className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${getHealthStatusColor()}`}
