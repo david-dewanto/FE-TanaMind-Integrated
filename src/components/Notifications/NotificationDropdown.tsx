@@ -15,6 +15,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   onViewAll
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -28,6 +29,18 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     markAllAsRead,
     fetchNotifications
   } = useNotifications();
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -116,39 +129,43 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 flex flex-col"
+          className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-sm sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[80vh] sm:max-h-96 flex flex-col"
+          style={{
+            right: isMobile ? '50%' : '0',
+            transform: isMobile ? 'translateX(50%)' : 'none'
+          }}
         >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+          <div className="px-3 py-2.5 sm:px-4 sm:py-3 border-b border-gray-200 flex items-center justify-between">
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Notifications</h3>
               {unreadCount > 0 && (
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                <span className="bg-green-100 text-green-800 text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                   {unreadCount} new
                 </span>
               )}
             </div>
 
             {/* Header Actions */}
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-0.5 sm:space-x-1">
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="p-1 text-gray-400 hover:text-[#0B9444] transition-colors"
+                  className="p-1 sm:p-1.5 text-gray-400 hover:text-[#0B9444] transition-colors"
                   title="Mark all as read"
                   disabled={isLoading}
                 >
-                  <Check className="h-4 w-4" />
+                  <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               )}
 
               {onViewAll && (
                 <button
                   onClick={handleViewAll}
-                  className="p-1 text-gray-400 hover:text-[#0B9444] transition-colors"
+                  className="p-1 sm:p-1.5 text-gray-400 hover:text-[#0B9444] transition-colors"
                   title="View all notifications"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               )}
             </div>
@@ -171,15 +188,15 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 </button>
               </div>
             ) : recentNotifications.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <div className="px-3 py-6 sm:px-4 sm:py-8 text-center">
+                <Bell className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
                 <p className="text-gray-500 text-sm">No notifications yet</p>
                 <p className="text-gray-400 text-xs mt-1">
                   You'll see notifications about your plants here
                 </p>
               </div>
             ) : (
-              <div className="space-y-1 p-2">
+              <div className="space-y-1 p-1.5 sm:p-2">
                 {recentNotifications.map((notification) => (
                   <NotificationItem
                     key={notification.id}
@@ -197,10 +214,10 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
           {/* Footer */}
           {notifications.length > 5 && onViewAll && (
-            <div className="px-4 py-3 border-t border-gray-200">
+            <div className="px-3 py-2.5 sm:px-4 sm:py-3 border-t border-gray-200">
               <button
                 onClick={handleViewAll}
-                className="w-full text-center text-[#0B9444] hover:text-[#056526] text-sm font-medium transition-colors"
+                className="w-full text-center text-[#0B9444] hover:text-[#056526] text-xs sm:text-sm font-medium transition-colors"
               >
                 View all notifications ({notifications.length})
               </button>

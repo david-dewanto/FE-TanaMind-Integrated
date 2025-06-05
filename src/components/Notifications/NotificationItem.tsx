@@ -30,15 +30,16 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   showActions = true
 }) => {
   const getNotificationIcon = (type: NotificationType) => {
+    const size = compact ? "h-4 w-4" : "h-5 w-5";
     switch (type) {
       case 'missed_watering':
-        return <Droplets className="h-5 w-5 text-blue-500" />;
+        return <Droplets className={`${size} text-blue-500`} />;
       case 'sensor_warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+        return <AlertTriangle className={`${size} text-yellow-500`} />;
       case 'auto_watering':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className={`${size} text-green-500`} />;
       default:
-        return <Bell className="h-5 w-5 text-gray-500" />;
+        return <Bell className={`${size} text-gray-500`} />;
     }
   };
 
@@ -93,10 +94,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   return (
     <div
       className={`
-        relative border rounded-lg p-4 transition-all duration-200 hover:shadow-md
+        relative border rounded-lg transition-all duration-200 hover:shadow-md
         ${notification.is_read ? 'bg-white border-gray-200' : `${getNotificationColor(notification.notification_type)} border-l-4`}
         ${notification.plant_id && onPlantClick ? 'cursor-pointer' : ''}
-        ${compact ? 'p-3' : 'p-4'}
+        ${compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4'}
       `}
       onClick={handlePlantClick}
     >
@@ -105,9 +106,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         <div className="absolute top-3 right-3 w-2 h-2 bg-primary rounded-full"></div>
       )}
 
-      <div className="flex items-start space-x-3">
+      <div className="flex items-start space-x-2 sm:space-x-3">
         {/* Icon */}
-        <div className="flex-shrink-0 mt-1">
+        <div className="flex-shrink-0 mt-0.5 sm:mt-1">
           {getNotificationIcon(notification.notification_type)}
         </div>
 
@@ -115,19 +116,19 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h4 className={`text-sm font-medium text-gray-900 ${compact ? 'truncate' : ''}`}>
+              <h4 className={`text-xs sm:text-sm font-medium text-gray-900 ${compact ? 'truncate' : ''}`}>
                 {notification.title}
               </h4>
               
-              <p className={`text-sm text-gray-600 mt-1 ${compact ? 'line-clamp-2' : ''}`}>
+              <p className={`text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 ${compact ? 'line-clamp-2' : ''}`}>
                 {notification.message}
               </p>
 
-              <div className="flex items-center mt-2 text-xs text-gray-500">
+              <div className="flex items-center mt-1.5 sm:mt-2 text-xs text-gray-500">
                 <span>{formatDateTime(notification.created_at)}</span>
                 {notification.plant_nickname && (
                   <>
-                    <span className="mx-2">•</span>
+                    <span className="mx-1.5 sm:mx-2">•</span>
                     <span className="font-medium">{notification.plant_nickname}</span>
                   </>
                 )}
@@ -136,34 +137,34 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
             {/* Actions */}
             {showActions && (
-              <div className="flex items-center space-x-1 ml-4">
+              <div className="flex items-center space-x-0.5 sm:space-x-1 ml-2 sm:ml-4">
                 {!notification.is_read ? (
                   <button
                     onClick={handleMarkAsRead}
-                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="p-0.5 sm:p-1 text-gray-400 hover:text-gray-600 transition-colors"
                     title="Mark as read"
                     aria-label="Mark as read"
                   >
-                    <CheckCircle className="h-4 w-4" />
+                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 ) : (
                   <button
                     onClick={handleMarkAsUnread}
-                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="p-0.5 sm:p-1 text-gray-400 hover:text-gray-600 transition-colors"
                     title="Mark as unread"
                     aria-label="Mark as unread"
                   >
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 )}
 
                 <button
                   onClick={handleDelete}
-                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                  className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 transition-colors"
                   title="Delete notification"
                   aria-label="Delete notification"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               </div>
             )}
