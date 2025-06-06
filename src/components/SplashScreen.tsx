@@ -14,6 +14,15 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [animationStage, setAnimationStage] = useState(0);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  useEffect(() => {
+    // Preload logo image
+    const logoImg = new Image();
+    logoImg.src = '/logo.png';
+    logoImg.onload = () => setLogoLoaded(true);
+    logoImg.onerror = () => setHasError(true);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -26,7 +35,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
 
   useEffect(() => {
     // Progressive animation stages for desktop with smoother timings
-    if (!isMobile) {
+    if (!isMobile && logoLoaded) {
       const timers: NodeJS.Timeout[] = [];
       
       // Stage 1: Background and particles - immediate
@@ -43,7 +52,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
       
       return () => timers.forEach(timer => clearTimeout(timer));
     }
-  }, [isMobile]);
+  }, [isMobile, logoLoaded]);
 
   useEffect(() => {
     // Fallback timer in case animation doesn't complete
@@ -210,7 +219,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
                      : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                  }}>
               <img 
-                src="/src/logo.png" 
+                src="/logo.png" 
                 alt="TanaMind Logo"
                 className="w-20 h-20 object-contain transition-all duration-[2000ms] ease-out"
                 style={{
@@ -218,6 +227,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
                   transform: animationStage >= 2 ? 'scale(1)' : 'scale(0.8)',
                   filter: animationStage >= 2 ? 'brightness(1)' : 'brightness(0.9)'
                 }}
+                loading="eager"
+                onError={() => setHasError(true)}
               />
             </div>
           </div>
